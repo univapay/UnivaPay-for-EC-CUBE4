@@ -1,0 +1,71 @@
+{% set config = repository('Plugin\\UnivaPay\\Entity\\Config').findOneById(1) %}
+{% set subscriptionTotal = 0 %}
+{% set subscriptionPeriod = 4 %}
+{% set periodMap = {
+    1: 'daily',
+    2: 'weekly',
+    3: 'biweekly',
+    4: 'monthly',
+    5: 'bimonthly',
+    6: 'quarterly',
+    7: 'semiannually',
+    8: 'annually'
+}
+%}
+{% for item in Order.OrderItems %}
+    {% if item.ProductClass %}
+        {% if item.ProductClass.SubscriptionPeriod %}
+            {% set subscriptionPeriod = item.ProductClass.SubscriptionPeriod.id %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+{% set subscriptionTotal = subscriptionTotal == 0 ? Order.payment_total : Order.payment_total - Order.discount  %}
+{{ form_widget(form.univa_pay_subscription_id) }}
+
+<script src="{{ config.getWidgetUrl() }}/client/checkout.js"></script>
+<script>
+    form = document.querySelector("#shopping-form");
+    subscriptionId = document.querySelector("#shopping_order_univa_pay_subscription_id");
+    form.appendChild(subscriptionId);
+    isSuccess = false;
+    checkout = UnivapayCheckout.create({
+        appId: "{{ config.getAppId() }}",
+        checkout: "payment",
+        amount: {{ subscriptionTotal }},
+        currency: "{{ Order.currency_code }}",
+        email: "{{ Order.email }}",
+        phoneNumber: "{{ Order.getPhoneNumber() }}",
+        metadata: { 
+            subscriptionOrderNo: "{{ Order.order_no }}",
+            items: [
+                {% for item in Order.getOrderItems() %}
+                `productName: {{ item.product_name }}, price: {{ item.total_price }}, quantity: {{ item.quantity }}`{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        },
+        tokenType: "subscription",
+        subscriptionPeriod: "{{ periodMap[subscriptionPeriod] }}",
+        capture: '{{ config.getCapture() }}' === '1',
+        subscriptionInitialAmount: {{ Order.payment_total }},
+        onSuccess: (result) => {
+            isSuccess = true;
+            subscriptionId.value = result.response.id;
+            form.submit();
+        },
+        onError: (e) => {
+            alert(e.error.error.message);
+            window.location.href = "{{ url('shopping') }}";
+        },
+        closed: () => {
+            if(isSuccess === false) {
+                alert(`{{ 'univa_pay.shopping.checkout.close'|trans }}`);
+                window.location.href = "{{ url('shopping') }}";
+            }
+        }
+    });
+    form.addEventListener("submit", () => {
+        event.preventDefault();
+        checkout.open();
+    });
+</script>

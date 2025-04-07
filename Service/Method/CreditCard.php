@@ -9,9 +9,11 @@ use Eccube\Service\Payment\PaymentMethodInterface;
 use Eccube\Service\Payment\PaymentResult;
 use Eccube\Service\PurchaseFlow\PurchaseContext;
 use Eccube\Service\PurchaseFlow\PurchaseFlow;
+use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Symfony\Component\Form\FormInterface;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\SDK;
+use Univapay\Enums\ChargeStatus;
 
 /**
  * クレジットカード(トークン決済)の決済処理を行う.
@@ -102,22 +104,17 @@ class CreditCard implements PaymentMethodInterface
      */
     public function checkout()
     {
-        // 決済サーバに仮売上のリクエスト送る(設定等によって送るリクエストは異なる)
-        $token = $this->Order->getUnivapayChargeId();
-
-        if ($token) {
-            // 受注ステータスを新規受付へ変更
+        // One Time Purchase
+        if ($this->Order->getUnivapayChargeId()) { 
             $OrderStatus = $this->orderStatusRepository->find(OrderStatus::NEW);
             $this->Order->setOrderStatus($OrderStatus);
 
-            // purchaseFlow::commitを呼び出し, 購入処理を完了させる.
             $this->purchaseFlow->commit($this->Order, new PurchaseContext());
 
-            // 決済種別取得
             $util = new SDK($this->Config->findOneById(1));
-            $charge = $util->getCharge($token);
-            // キャプチャ済みの場合は支払い済みに変更
-            if($charge->status->getValue() === 'successful') {
+            $charge = $util->getCharge($this->Order->getUnivapayChargeId());
+
+            if($charge->status === ChargeStatus::SUCCESSFUL()) {
                 $OrderStatus = $this->orderStatusRepository->find(OrderStatus::PAID);
                 $this->Order->setOrderStatus($OrderStatus);
                 $this->Order->setPaymentDate(new \DateTime());
@@ -125,12 +122,21 @@ class CreditCard implements PaymentMethodInterface
 
             $result = new PaymentResult();
             $result->setSuccess(true);
-        } else {
-            // 受注ステータスを購入処理中へ変更
+        }
+        // Subscription Purchase
+        else if($this->Order->getUnivapaySubscriptionId()) {
+            $OrderStatus = $this->orderStatusRepository->find(UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
+            $this->Order->setOrderStatus($OrderStatus);
+
+            $this->purchaseFlow->rollback($this->Order, new PurchaseContext());
+
+            $result = new PaymentResult();
+            $result->setSuccess(true);
+        }
+        else {
             $OrderStatus = $this->orderStatusRepository->find(OrderStatus::PROCESSING);
             $this->Order->setOrderStatus($OrderStatus);
 
-            // 失敗時はpurchaseFlow::rollbackを呼び出す.
             $this->purchaseFlow->rollback($this->Order, new PurchaseContext());
 
             $result = new PaymentResult();

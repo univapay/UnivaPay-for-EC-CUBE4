@@ -1,0 +1,47 @@
+{% set config = repository('Plugin\\UnivaPay\\Entity\\Config').findOneById(1) %}
+{{ form_widget(form.univa_pay_charge_id) }}
+
+<script src="{{ config.getWidgetUrl() }}/client/checkout.js"></script>
+<script>
+    form = document.querySelector("#shopping-form");
+    chargeId = document.querySelector("#shopping_order_univa_pay_charge_id");
+    form.appendChild(chargeId);
+    isSuccess = false;
+    checkout = UnivapayCheckout.create({
+        appId: "{{ config.getAppId() }}",
+        checkout: "payment",
+        amount: {{ Order.payment_total }},
+        currency: "{{ Order.currency_code }}",
+        email: "{{ Order.email }}",
+        phoneNumber: "{{ Order.getPhoneNumber() }}",
+        metadata: {
+            orderNo: "{{ Order.order_no }}",
+            items: [
+                {% for item in Order.getOrderItems() %}
+                `productName: {{ item.product_name }}, price: {{ item.total_price }}, quantity: {{ item.quantity }}`{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        },
+        tokenType: "one_time",
+        capture: '{{ config.getCapture() }}' === '1',
+        onSuccess: (result) => {
+            isSuccess = true;
+            chargeId.value = result.response.id;
+            form.submit();
+        },
+        onError: (e) => {
+            alert(e.error.error.message);
+            window.location.href = "{{ url('shopping') }}";
+        },
+        closed: () => {
+            if(isSuccess === false) {
+                alert(`{{ 'univa_pay.shopping.checkout.close'|trans }}`);
+                window.location.href = "{{ url('shopping') }}";
+            }
+        }
+    });
+    form.addEventListener("submit", () => {
+        event.preventDefault();
+        checkout.open();
+    });
+</script>

@@ -1,6 +1,6 @@
 {
   "name": "univapay/univapay-for-ec-cube4",
-  "version": "1.5.0",
+  "version": "40.1.0.0",
   "description": "UnivaPay for EC-CUBE4",
   "type": "eccube-plugin",
   "extra": {
@@ -8,6 +8,6 @@
   },
   "require": {
     "ec-cube/plugin-installer": "~0.0.6 || ^2.0",
-    "univapay/php-sdk": ">=6.5.0"
+    "univapay/php-sdk": "^6.7"
   }
 }

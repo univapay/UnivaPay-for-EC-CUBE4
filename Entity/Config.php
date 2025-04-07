@@ -49,18 +49,18 @@ class Config
     private $app_secret;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="webhook_auth", type="string", length=36, nullable=true)
+     */
+    private $webhook_auth;
+
+    /**
      * @var boolean
      *
      * @ORM\Column(name="capture", type="boolean", nullable=true)
      */
     private $capture;
-
-    /**
-     * @var boolean
-     *
-     * @ORM\Column(name="mail", type="boolean", nullable=true)
-     */
-    private $mail;
 
     /**
      * @return int
@@ -151,6 +151,26 @@ class Config
     }
 
     /**
+     * @return string
+     */
+    public function getWebhookAuth()
+    {
+        return $this->webhook_auth;
+    }
+
+    /**
+     * @param string $webhook_auth
+     *
+     * @return $this;
+     */
+    public function setWebhookAuth($value)
+    {
+        $this->webhook_auth = $value;
+
+        return $this;
+    }
+
+    /**
      * @return boolean
      */
     public function getCapture()
@@ -166,26 +186,6 @@ class Config
     public function setCapture($capture)
     {
         $this->capture = $capture;
-
-        return $this;
-    }
-
-    /**
-     * @return boolean
-     */
-    public function getMail()
-    {
-        return $this->mail;
-    }
-
-    /**
-     * @param boolean $mail
-     *
-     * @return $this;
-     */
-    public function setMail($mail)
-    {
-        $this->mail = $mail;
 
         return $this;
     }

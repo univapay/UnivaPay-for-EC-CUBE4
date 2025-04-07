@@ -1,6 +1,7 @@
 <?php
 namespace Plugin\UnivaPay\Controller\Admin;
 
+use Exception;
 use Eccube\Controller\AbstractController;
 use Eccube\Service\Composer\ComposerServiceInterface;
 use Plugin\UnivaPay\Form\Type\Admin\ConfigType;
@@ -64,7 +65,7 @@ class ConfigController extends AbstractController
      */
     public function sdk(Request $request) {
         try {
-            $log = $this->composerService->execRequire('univapay/php-sdk:6.5.0');
+            $this->composerService->execRequire('univapay/php-sdk:^6.7');
             return $this->redirectToRoute('univa_pay_admin_config', ['error' => 0]);
         } catch (Exception $e) {
             return $this->redirectToRoute('univa_pay_admin_config', ['error' => 1]);

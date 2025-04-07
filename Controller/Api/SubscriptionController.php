@@ -1,52 +1,42 @@
 <?php
-namespace Plugin\UnivaPay\Controller;
+namespace Plugin\UnivaPay\Controller\Api;
 
+use DateTime;
+use Exception;
 use Eccube\Controller\AbstractController;
 use Eccube\Entity\Master\OrderStatus;
 use Eccube\Entity\Order;
+use Eccube\Event\EventArgs;
 use Eccube\Repository\Master\OrderStatusRepository;
 use Eccube\Repository\OrderRepository;
 use Eccube\Service\MailService;
 use Eccube\Service\OrderHelper;
+use Eccube\Service\OrderStateMachine;
 use Eccube\Service\PurchaseFlow\Processor\AddPointProcessor;
 use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
 use Eccube\Service\PurchaseFlow\PurchaseContext;
 use Eccube\Service\PurchaseFlow\PurchaseFlow;
+use Plugin\UnivaPay\Entity\Config;
+use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\SDK;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Univapay\Enums\WebhookEvent;
 
 class SubscriptionController extends AbstractController
 {
-    /** @var ConfigRepository */
-    protected $Config;
-
-    /** @var OrderRepository */
-    protected $Order;
-
-    /**
-     * @var OrderStatusRepository
-     */
+    private $Config;
+    private $Order;
     private $orderStatusRepository;
-
-    /**
-     * @var PurchaseFlow
-     */
     private $purchaseFlow;
-
-    /**
-     * @var OrderHelper
-     */
     private $orderHelper;
-
-    /**
-     * @var MailService
-     */
-    protected $mailService;
+    private $mailService;
+    private $orderNoProcessor;
+    private $addPointProcessor;
+    private $orderStateMachine;
 
     /**
      * OrderController constructor.
@@ -59,16 +49,18 @@ class SubscriptionController extends AbstractController
      * @param OrderNoProcessor $orderNoProcessor
      * @param AddPointProcessor $addPointProcessor
      * @param MailService $mailService
+     * @param OrderStateMachine $orderStateMachine
      */
     public function __construct(
+        AddPointProcessor $addPointProcessor,
         ConfigRepository $configRepository,
         OrderRepository $orderRepository,
         OrderStatusRepository $orderStatusRepository,
         PurchaseFlow $shoppingPurchaseFlow,
         OrderHelper $orderHelper,
         OrderNoProcessor $orderNoProcessor,
-        AddPointProcessor $addPointProcessor,
-        MailService $mailService
+        MailService $mailService,
+        OrderStateMachine $orderStateMachine
     ) {
         $this->Config = $configRepository;
         $this->Order = $orderRepository;
@@ -78,44 +70,74 @@ class SubscriptionController extends AbstractController
         $this->orderNoProcessor = $orderNoProcessor;
         $this->addPointProcessor = $addPointProcessor;
         $this->mailService = $mailService;
+        $this->orderStateMachine = $orderStateMachine;
     }
 
     /**
      * subscription webhook action
      *
-     * @Method("POST")
-     * @Route("/univapay/hook", name="univa_pay_hook")
+     * @Route("/univapay/hook", name="univa_pay_hook", methods={"POST"})
      */
     public function hook(Request $request)
     {
-        $data = json_decode($request->getContent());
-        $existOrder = $this->Order->findOneBy(["order_no" => $data->data->metadata->orderNo]);
-        if (is_null($existOrder))
-            return new Response();
-
         $config = $this->Config->findOneById(1);
-        $util = new SDK($config);
-        $charge = null;
-        if ($data->event === 'subscription_payment' || $data->event === 'subscription_failure') {
-            // SubscriptionIdからChargeを取得
-            $charge = $util->getChargeBySubscriptionId($data->data->id);
-        } elseif ( $data->event === 'charge_finished') {
-            // 支払い確定したら注文ステータスを変更する
-            // セキュリティのために一様UUIDを確認する
-            if ($data->data->id !== $existOrder->getUnivapayChargeId())
-                return new Response();
-            $OrderStatus = $this->orderStatusRepository->find(OrderStatus::PAID);
-            $existOrder->setOrderStatus($OrderStatus);
-            $existOrder->setPaymentDate(new \DateTime());
-            $this->entityManager->persist($existOrder);
-            $this->entityManager->flush();
-            return new Response();
+
+        if (!$this->isHeaderAuthValid($request, $config)) {
+            return new Response(trans('univa_pay.error.webhook.authorization'), 401);
         }
-        if (is_null($charge))
-            return new Response();
-        // 再課金待ちもしくは初回課金の場合は何もしない
-        if ($data->data->status === 'unpaid' || $charge->id === $existOrder->getUnivapayChargeId())
-            return new Response();
+
+        $data = json_decode($request->getContent());
+        $util = new SDK($config);
+
+        $charge = $util->getChargeBySubscriptionId($data->data->id);
+        if (is_null($charge)) {
+            return new Response("Charge not found", 404);
+        }
+
+        if ($this->Order->findOneBy(['univa_pay_charge_id' => $charge->id])) {
+            return new Response("Order already created", 200);
+        }
+
+        $subscriptionOrder = $this->Order->findOneBy([
+            "univa_pay_subscription_id" => $data->data->id,
+            "OrderStatus" => UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE
+        ]);
+
+        if (is_null($subscriptionOrder)) {
+            return new Response(trans('univa_pay.error.webhook.subscription.not_found'), 404);
+        }
+
+        switch(WebhookEvent::fromValue($data->event)) {
+            case WebhookEvent::SUBSCRIPTION_PAYMENT():
+                $order = $this->createOrder($subscriptionOrder, $data, $charge, WebhookEvent::SUBSCRIPTION_PAYMENT());
+                $charge->patch(['orderNo' => $order->getId()]);
+                return new Response("succefully accepted", 201);
+            case WebhookEvent::SUBSCRIPTION_FAILURE():
+                $order = $this->createOrder($subscriptionOrder, $data, $charge, WebhookEvent::SUBSCRIPTION_FAILURE());
+                $charge->patch(['orderNo' => $order->getId()]);
+                return new Response("succefully accepted", 201);
+            default:
+        }
+
+        return new Response();
+    }
+
+    private function isHeaderAuthValid(Request $request, Config $config): bool
+    {
+        if (empty($config->getWebhookAuth())) {
+            return true;
+        }
+
+        if ($config->getWebhookAuth() !== $request->headers->get('Authorization')) {
+            log_info('Invalid webhook authorization attempt', ['provided' => $request->headers->get('Authorization')]);
+            return false;
+        }
+
+        return true;
+    }
+
+    private function createOrder($existOrder, $data, $charge, $event)
+    {
         // cloneで注文を複製してもidが変更できないため一から作成
         $newOrder = new Order;
         // 今回での決済の課金ID取得
@@ -160,34 +182,12 @@ class SubscriptionController extends AbstractController
         $newOrder->setDeviceType($existOrder->getDeviceType());
         $newOrder->setCustomerOrderStatus($existOrder->getCustomerOrderStatus());
         $newOrder->setOrderStatusColor($existOrder->getOrderStatusColor());
-        // 商品ごとの今回課金金額を取得
-        $amount = json_decode($existOrder->getUnivapayChargeAmount());
-        // 商品金額が存在しなかったらその時点のデータを作成する
-        if(!$amount) {
-            $items = [];
-            foreach($existOrder->getOrderItems() as $value) {
-                // 商品単位で金額を取得
-                if($value->isProduct()) {
-                    $class = $value->getProductClass();
-                    $items[$class->getId()] = ['price' => $class->getPrice01(), 'tax' => $class->getPrice01IncTax() - $class->getPrice01()];
-                }
-            }
-            $newOrder->setUnivapayChargeAmount(json_encode($items));
-            $amount = json_decode($newOrder->getUnivapayChargeAmount());
-        }
-        $amount = get_object_vars($amount);
+
         foreach($existOrder->getOrderItems() as $value) {
             $newOrderItem = clone $value;
             // 値引きは引き継がない
             if($newOrderItem->isDiscount() || $newOrderItem->isPoint())
                 continue;
-            // OrderItemごとの金額を修正する
-            if($newOrderItem->isProduct()) {
-                // 二回目は通常金額を取得する
-                $class = $newOrderItem->getProductClass();
-                $newOrderItem->setPrice($amount[$class->getId()]->price);
-                $newOrderItem->setTax($amount[$class->getId()]->tax);
-            }
             $newOrderItem->setOrder($newOrder);
             $newOrder->addOrderItem($newOrderItem);
         }
@@ -226,28 +226,35 @@ class SubscriptionController extends AbstractController
         $this->orderNoProcessor->process($newOrder, $purchaseContext);
         $this->entityManager->flush();
         // 定期課金に失敗した場合はキャンセル済み注文に変更
-        $OrderStatus = $this->orderStatusRepository->find($data->data->status === 'suspended' ? OrderStatus::CANCEL : OrderStatus::PAID);
+        $OrderStatus = $this->orderStatusRepository->find($event === WebhookEvent::SUBSCRIPTION_PAYMENT() ? OrderStatus::PAID : OrderStatus::CANCEL);
         $newOrder->setOrderStatus($OrderStatus);
-        if($config->getMail())
+        if ($event === WebhookEvent::SUBSCRIPTION_PAYMENT()) {
             $this->mailService->sendOrderMail($newOrder);
+        }   
         $this->entityManager->flush();
-        return new Response();
+
+        return $newOrder;
     }
 
     /**
      * subscription cancel action
      *
-     * @Method("POST")
-     * @Route("/univapay/subscription/cancel/{id}", requirements={"id" = "\d+"}, name="univa_pay_cancel_subscription")
+     * @Route("api/subscription/{id}", requirements={"id" = "\d+"}, name="univa_pay_cancel_subscription", methods={"PUT"})
      */
-    public function cancelSubscription(Request $request, Order $Order)
+    public function cancelSubscription(Request $request, Order $order)
     {
         if ($request->isXmlHttpRequest() && $this->isTokenValid()) {
-            $util = new SDK($this->Config->findOneById(1));
-            $subscription = $util->getSubscriptionByChargeId($Order->getUnivapayChargeId());
-            $subscription = $subscription->cancel()->awaitResult();
+            try {
+                $status = $this->orderStatusRepository->find(UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_CANCEL);
+                $this->orderStateMachine->apply($order, $status);
+                $this->entityManager->persist($order);
+                $this->entityManager->flush();
+            } catch (Exception $e) {
+                log_info('why: '. $e->getMessage());
+                return $this->json(['status' => "error"], 500);
+            }
 
-            return $this->json($subscription->status);
+            return $this->json(['status' => "ok"]);
         }
 
         throw new BadRequestHttpException();
@@ -256,8 +263,7 @@ class SubscriptionController extends AbstractController
     /**
      * subscription get action
      *
-     * @Method("GET")
-     * @Route("/univapay/subscription/get/{id}", requirements={"id" = "\d+"}, name="univa_pay_get_subscription")
+     * @Route("/univapay/subscription/{id}", requirements={"id" = "\d+"}, name="univa_pay_get_subscription", methods={"GET"})
      */
     public function getSubscription(Request $request, Order $Order)
     {
@@ -270,12 +276,11 @@ class SubscriptionController extends AbstractController
 
         throw new BadRequestHttpException();
     }
-
+    
     /**
      * subscription update action
      *
-     * @Method("POST")
-     * @Route("/univapay/subscription/update/{id}", requirements={"id" = "\d+"}, name="univa_pay_update_subscription")
+     * @Route("/univapay/subscription/update/{id}", requirements={"id" = "\d+"}, name="univa_pay_update_subscription", methods={"POST"})
      */
     public function updateSubscription(Request $request, Order $Order)
     {

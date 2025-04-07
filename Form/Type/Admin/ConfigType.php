@@ -9,6 +9,7 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Uuid;
 
 class ConfigType extends AbstractType
 {
@@ -39,9 +40,11 @@ class ConfigType extends AbstractType
                 'required' => false,
                 'label'    => false
             ])
-            ->add('mail', CheckboxType::class, [
+            ->add('webhook_auth', TextType::class, [
                 'required' => false,
-                'label'    => false
+                'constraints' => [
+                    new Uuid(),
+                ],
             ]);
     }
 

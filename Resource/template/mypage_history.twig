@@ -1,4 +1,4 @@
-{% if Order.Payment.getMethodClass == 'Plugin\\UnivaPay\\Service\\Method\\Subscription' %}
+{% if Order.OrderStatus.getId() == constant('Plugin\\UnivaPay\\Entity\\Master\\UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE') %}
     {% set config = repository('Plugin\\UnivaPay\\Entity\\Config').findOneById(1) %}
     <script src="{{ config.getWidgetUrl() }}/client/checkout.js"></script>
     <div id="univapay-subscription">
@@ -8,14 +8,8 @@
         <ul class="list-inline">
             <li class="list-inline-item">
                 <button id="univapay-action__cancel" type="button"
-                        class="btn btn-ec-regular px-5" disabled>
+                        class="btn btn-ec-regular px-5">
                     {{ 'univa_pay.subscription.cancel'|trans }}
-                </button>
-            </li>
-            <li class="list-inline-item">
-                <button id="univapay-action__change" type="button"
-                        class="btn btn-ec-regular px-5" disabled>
-                    {{ 'univa_pay.subscription.change'|trans }}
                 </button>
             </li>
         </ul>
@@ -25,21 +19,14 @@
             // 支払情報の下にセクションを移動
             document.querySelector(".ec-orderPayment").after(document.querySelector("#univapay-subscription"));
 
-            // 決済状況取得
-            $.ajax({
-                type: 'GET',
-                url: '{{ url('univa_pay_get_subscription', { id: Order.id }) }}',
-            }).always(function(e) {
-                if(e.status.name !== 'CANCELED') {
-                    $('#univapay-subscription button').prop('disabled', false);
-                }
-            });
-
             $('#univapay-action__cancel').on('click', function () {
                 $('#univapay-subscription button').prop('disabled', true);
                 $.ajax({
-                    type: 'POST',
-                    url: '{{ url('univa_pay_cancel_subscription', { id: Order.id }) }}'
+                    type: 'PUT',
+                    url: '{{ url('univa_pay_cancel_subscription', { id: Order.id }) }}',
+                    data: {
+                        mode: 'cancel'
+                    }
                 }).always(function () {
                     location.href = location.href;
                 });

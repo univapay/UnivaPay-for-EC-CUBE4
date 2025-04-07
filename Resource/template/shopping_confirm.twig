@@ -1,68 +1,14 @@
-{% set isSubscription = Order.Payment.getMethodClass == 'Plugin\\UnivaPay\\Service\\Method\\Subscription' %}
-{% if Order.Payment.getMethodClass == 'Plugin\\UnivaPay\\Service\\Method\\CreditCard' or isSubscription %}
-    {% set config = repository('Plugin\\UnivaPay\\Entity\\Config').findOneById(1) %}
-    {% set subscriptionTotal = 0 %}
-    {% set subscriptionPeriod = 4 %}
-    {% for item in Order.OrderItems %}{% if item.ProductClass %}
-        {% if item.ProductClass.SubscriptionPeriod %}
-            {% set subscriptionPeriod = item.ProductClass.SubscriptionPeriod.id %}
+{% if Order.payment_method == 'UnivaPay' %}
+    {% set isSubscription = false %}
+    {% for item in Order.OrderItems %}
+        {% if item.ProductClass and item.ProductClass.SubscriptionPeriod and item.ProductClass.SubscriptionPeriod.id > 0 %}
+            {% set isSubscription = true %}
         {% endif %}
-        {% set subscriptionTotal = subscriptionTotal + (item.ProductClass.price01_inc_tax*item.quantity) %}
-    {% endif %}{% endfor %}
-    {% set subscriptionTotal = subscriptionTotal == 0 ? Order.payment_total : Order.delivery_fee_total + subscriptionTotal %}
-    {{ form_widget(form.univa_pay_charge_id) }}
-    <script src="{{ config.getWidgetUrl() }}/client/checkout.js"></script>
-    <script>
-        form = document.querySelector("#shopping-form");
-        chargeId = document.querySelector("#shopping_order_univa_pay_charge_id");
-        form.appendChild(chargeId);
-        isSuccess = false;
-        checkout = UnivapayCheckout.create({
-            appId: "{{ config.getAppId() }}",
-            checkout: "payment",
-            amount: {{ isSubscription ? subscriptionTotal : Order.payment_total }},
-            currency: "{{ Order.currency_code }}",
-            email: "{{ Order.email }}",
-            metadata: { orderNo: "{{ Order.order_no }}" },
-            tokenType: '{{ isSubscription ? "subscription" : "one_time" }}',
-            {% if subscriptionPeriod == 1 %}
-                subscriptionPeriod: 'daily',
-            {% elseif subscriptionPeriod == 2 %}
-                subscriptionPeriod: 'weekly',
-            {% elseif subscriptionPeriod == 3 %}
-                subscriptionPeriod: 'biweekly',
-            {% elseif subscriptionPeriod == 4 %}
-                subscriptionPeriod: 'monthly',
-            {% elseif subscriptionPeriod == 5 %}
-                subscriptionPeriod: 'bimonthly',
-            {% elseif subscriptionPeriod == 6 %}
-                subscriptionPeriod: 'quarterly',
-            {% elseif subscriptionPeriod == 7 %}
-                subscriptionPeriod: 'semiannually',
-            {% elseif subscriptionPeriod == 8 %}
-                subscriptionPeriod: 'annually',
-            {% endif %}
-            capture: '{{ config.getCapture() }}' === '1',
-            subscriptionInitialAmount: {{ Order.payment_total }},
-            onSuccess: (result) => {
-                isSuccess = true;
-                chargeId.value = result.response.id;
-                form.submit();
-            },
-            onError: () => {
-                alert("エラーが発生しました。サイト管理者にお問い合わせください。");
-                window.location.href = "{{ url('shopping') }}";
-            },
-            closed: () => {
-                if(isSuccess === false) {
-                    alert("決済が中断されました");
-                    window.location.href = "{{ url('shopping') }}";
-                }
-            }
-        });
-        form.addEventListener("submit", () => {
-            event.preventDefault();
-            checkout.open();
-        });
-    </script>
+    {% endfor %}
+
+    {% if isSubscription %}
+        {% include '@UnivaPay/checkout/subscription.twig' %}
+    {% else %}
+        {% include '@UnivaPay/checkout/one_time_purchase.twig' %}
+    {% endif %}
 {% endif %}

@@ -24,6 +24,11 @@ class CreditCardExtention extends AbstractTypeExtension
                 'required' => false,
                 'mapped' => true, // Orderエンティティに追加したカラムなので、mappedはtrue
             ]);
+
+            $form->add('univa_pay_subscription_id', HiddenType::class, [
+                'required' => false,
+                'mapped' => true,
+            ]);
         });
     }
 

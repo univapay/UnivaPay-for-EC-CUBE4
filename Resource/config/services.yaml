@@ -1,0 +1,6 @@
+services:
+    Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus:
+        class: Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus
+
+imports:
+    - resource: 'order_state_machine.php'

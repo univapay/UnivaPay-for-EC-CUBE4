@@ -1,0 +1,26 @@
+<div class="d-none">
+    <div id="univapay-info" class="card rounded border-0 mb-4">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-8">
+                    <span class="card-title">{{ 'univa_pay.admin.order_edit.title'|trans }}</span>
+                </div>
+                <div class="col-4 text-right">
+                    <a data-toggle="collapse" href="#univapay-info__body" aria-expanded="false" aria-controls="univapay-info__body"><i class="fa fa-angle-up fa-lg"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="collapse show ec-cardCollapse" id="univapay-info__body">
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-2"><span>{{ 'univa_pay.admin.order_edit.payment_status'|trans }}</span></div>
+                    <div class="col" id="univapay-status">{{ Order.univapaySubscriptionStatus }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-2"><span>{{ 'univa_pay.admin.order_edit.subscription_id'|trans }}</span></div>
+                    <div class="col" id="univapay-subscription">{{ Order.univa_pay_subscription_id }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

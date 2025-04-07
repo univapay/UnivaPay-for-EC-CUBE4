@@ -1,0 +1,60 @@
+{% set univapayStatusMap = {
+    'pending': 'univa_pay.admin.order.status.pending'|trans,
+    'authorized': 'univa_pay.admin.order.status.authorized'|trans,
+    'successful': 'univa_pay.admin.order.status.successful'|trans,
+    'failed': 'univa_pay.admin.order.status.failed'|trans,
+    'error': 'univa_pay.admin.order.status.error'|trans,
+    'canceled': 'univa_pay.admin.order.status.canceled'|trans,
+    'awaiting': 'univa_pay.admin.order.status.awaiting'|trans,
+ } %}
+<div class="d-none">
+    <div id="univapay-info" class="card rounded border-0 mb-4">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-8">
+                    <span class="card-title">{{ 'univa_pay.admin.order_edit.title'|trans }}</span>
+                </div>
+                <div class="col-4 text-right">
+                    <a data-toggle="collapse" href="#univapay-info__body" aria-expanded="false" aria-controls="univapay-info__body"><i class="fa fa-angle-up fa-lg"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="collapse show ec-cardCollapse" id="univapay-info__body">
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-2"><span>{{ 'univa_pay.admin.order_edit.payment_status'|trans }}</span></div>
+                    <div class="col" id="univapay-status">
+                        {{ univapayStatusMap[Order.univapayCharge.status.value] | default('univa_pay.admin.order.status.unknown'|trans) }}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-2"><span>{{ 'univa_pay.admin.order_edit.charge_id'|trans }}</span></div>
+                    <div class="col" id="univapay-charge">{{ Order.univapayCharge.id }}</div>
+                </div>
+                {% if Order.univapayRefund.items|length > 0 %}
+                <div class="row mb-2">
+                    <div class="col-2"><span>{{ 'univa_pay.admin.order_edit.refund'|trans }}</span></div>
+                    <div class="col">
+                        <table class="table table-striped">
+                        <tbody>
+                            <thead>
+                                <th>{{ 'univa_pay.admin.order_edit.id'|trans }}</th>
+                                <th>{{ 'univa_pay.admin.order_edit.payment_status'|trans }}</th>
+                                <th>{{ 'univa_pay.admin.order_edit.amount'|trans }}</th>
+                            </thead>
+                            {% for refund in Order.univapayRefund.items %}
+                                <tr>
+                                    <td>{{ refund.id }}</td>
+                                    <td>{{ univapayStatusMap[refund.status.value] | default('univa_pay.admin.order.status.unknown'|trans) }}</td>
+                                    <td>{{ refund.amountFormatted }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

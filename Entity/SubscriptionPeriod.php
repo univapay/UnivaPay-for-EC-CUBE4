@@ -12,6 +12,7 @@
      */
     class SubscriptionPeriod extends AbstractMasterEntity
     {
+        const NON_SUBSCRIPTION = 0;
         const DAILY = 1;
         const WEEKLY = 2;
         const BIWEEKLY = 3;

@@ -11,13 +11,17 @@
 
 {% block main %}
     <script>
+        function generateWebhookAuth()
+        {
+            document.getElementById('{{ form.webhook_auth.vars.id }}').value = crypto.randomUUID();
+        }
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
         const error = urlParams.get('error');
         if(error === '0') {
             alert("インストールに成功しました。");
         } else if(error === '1') {
-            alert("インストールができませんでした。サーバ内で下記コマンドを実行してください。\nbin/console eccube:composer:require univapay/php-sdk:6.5.0");
+            alert("インストールができませんでした。サーバ内で下記コマンドを実行してください。\nbin/console eccube:composer:require univapay/php-sdk:^6.7");
         }
     </script>
     <form role="form" method="post">
@@ -70,10 +74,13 @@
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-3"><span>{{ 'univa_pay.admin.config.mail'|trans }}</div>
+                                <div class="col-3"><span>{{ 'univa_pay.admin.config.webhook_auth'|trans }}</div>
                                 <div class="col mb-2">
-                                    {{ form_widget(form.mail) }}
-                                    {{ form_errors(form.mail) }}
+                                    {{ form_widget(form.webhook_auth) }}
+                                    {{ form_errors(form.webhook_auth) }}
+                                    <div class="mt-2">
+                                        <button type="button" onClick="generateWebhookAuth()" class="btn btn-ec-regular">{{ 'univa_pay.admin.config.webhook_auth_generate_button'|trans }}</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
