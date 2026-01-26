@@ -45,27 +45,25 @@ jobs:
 
     steps:
     - name: Checkout EC-CUBE
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: EC-CUBE/ec-cube
         ref: '4.0'
 
     - name: Checkout UnivaPay Plugin
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         path: app/Plugin/${{ matrix.plugin-code }}
 
     - name: Get Composer Cache Directory
       id: composer-cache
-      run: |
-        echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+      run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       with:
         path: ${{ steps.composer-cache.outputs.dir }}
         key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-composer-
+        restore-keys: ${{ runner.os }}-composer-
 
     - name: Setup PHP
       uses: nanasess/setup-php@master
@@ -75,7 +73,7 @@ jobs:
     - name: composer install
       run: |
         curl -O https://getcomposer.org/download/latest-1.x/composer.phar
-        php composer.phar install --dev --no-interaction -o --apcu-autoloader
+        php composer.phar install --no-scripts --no-plugins
 
     - name: Setup EC-CUBE and plugin
       env:
@@ -88,6 +86,9 @@ jobs:
         bin/console eccube:fixtures:load
         bin/console eccube:plugin:install --code ${{ matrix.plugin-code }}
         bin/console eccube:plugin:enable --code ${{ matrix.plugin-code }}
+
+    - name: Use Packagist.jp
+      run: php composer.phar config -g repo.packagist composer https://packagist.jp
 
     - name: PHPUnit for plugin
       env:
