@@ -51,7 +51,7 @@ class CartValidationEventListener implements EventSubscriberInterface
 
         foreach ($this->cartService->getCart()->getCartItems() as $item) {
             $subscriptionPeriod = $item->getProductClass()->getSubscriptionPeriod();
-            if ($subscriptionPeriod !== null && $subscriptionPeriod !== SubscriptionPeriod::NON_SUBSCRIPTION) {
+            if ($subscriptionPeriod !== null && $subscriptionPeriod->getId() !== SubscriptionPeriod::NON_SUBSCRIPTION) {
                 $hasSubscription = true;
                 break;
             }
