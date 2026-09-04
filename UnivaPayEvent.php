@@ -2,10 +2,18 @@
 namespace Plugin\UnivaPay;
 
 use Eccube\Event\TemplateEvent;
+use Plugin\UnivaPay\Util\SubscriptionCartChecker;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class UnivaPayEvent implements EventSubscriberInterface
 {
+    private $subscriptionCartChecker;
+
+    public function __construct(SubscriptionCartChecker $subscriptionCartChecker)
+    {
+        $this->subscriptionCartChecker = $subscriptionCartChecker;
+    }
+
     /**
      * リッスンしたいサブスクライバのイベント名の配列を返します。
      * 配列のキーはイベント名、値は以下のどれかをしてします。
@@ -27,7 +35,8 @@ class UnivaPayEvent implements EventSubscriberInterface
             '@admin/Order/edit.twig' => 'onAdminOrderEditTwig',
             'Mypage/history.twig' => 'onMypageHistoryTwig',
             'Mypage/withdraw.twig' => 'onMyPageWithdrawTwig',
-            'Shopping/confirm.twig' => 'onShoppingConfirmTwig'
+            'Shopping/confirm.twig' => 'onShoppingConfirmTwig',
+            'Shopping/login.twig' => 'onShoppingLoginTwig'
         ];
     }
 
@@ -49,5 +58,11 @@ class UnivaPayEvent implements EventSubscriberInterface
     public function onShoppingConfirmTwig(TemplateEvent $event)
     {
         $event->addSnippet('@UnivaPay/shopping_confirm.twig');
+    }
+
+    public function onShoppingLoginTwig(TemplateEvent $event)
+    {
+        $event->setParameter('UnivaPaySubscriptionInCart', $this->subscriptionCartChecker->hasSubscriptionItem());
+        $event->addSnippet('@UnivaPay/shopping_login.twig');
     }
 }

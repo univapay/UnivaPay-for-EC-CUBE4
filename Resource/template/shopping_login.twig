@@ -1,0 +1,37 @@
+{% if UnivaPaySubscriptionInCart|default(false) and is_granted('IS_AUTHENTICATED_REMEMBERED') == false %}
+    <div id="univa-pay-guest-purchase-alert" class="ec-cartRole__error" style="display:none">
+        <div class="ec-alert-warning">
+            <div class="ec-alert-warning__icon"><img src="{{ asset('assets/icon/exclamation-white.svg') }}"></div>
+            <div class="ec-alert-warning__text">
+                {{ 'univa_pay.error.shopping.subscription.member_required'|trans|nl2br }}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var alertElement = document.getElementById('univa-pay-guest-purchase-alert');
+            var guestArea = document.querySelector('.ec-guest__inner');
+            var guestButton = document.querySelector('.ec-guest__actions a');
+
+            if (guestButton) {
+                guestButton.removeAttribute('href');
+                guestButton.setAttribute('aria-disabled', 'true');
+                guestButton.classList.add('disabled');
+                guestButton.style.opacity = '0.5';
+                guestButton.style.cursor = 'not-allowed';
+                guestButton.style.pointerEvents = 'none';
+            }
+
+            alertElement.style.display = '';
+            if (guestArea) {
+                guestArea.insertBefore(alertElement, guestArea.firstChild);
+            } else {
+                var main = document.querySelector('.ec-layoutRole__main');
+                if (main) {
+                    main.insertBefore(alertElement, main.firstChild);
+                }
+            }
+        })();
+    </script>
+{% endif %}

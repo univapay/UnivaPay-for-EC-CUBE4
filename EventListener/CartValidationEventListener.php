@@ -9,7 +9,6 @@ use Eccube\Service\PurchaseFlow\PurchaseContext;
 use Eccube\Service\PurchaseFlow\PurchaseFlow;
 use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\RouterInterface;
@@ -85,8 +84,9 @@ class CartValidationEventListener implements EventSubscriberInterface
         if (!$token) {
             return null;
         }
-
-        if (!is_object($user = $token->getUser())) {
+        
+        $user = $token->getUser();
+        if (!is_object($user)) {
             return null;
         }
 

@@ -58,5 +58,6 @@ univa_pay.error.webhook.authorization: ウェブフックの認証に失敗し�
 univa_pay.error.webhook.subscription.not_found: サブスクリプションが見つかりません。
 univa_pay.error.cart.subscription.only_one_item: サブスクリプションがカートに追加されている場合、他のアイテムを追加することはできません。
 univa_pay.error.customer.withdraw.has_subscription: サブスクリプションが存在するため、アカウントを削除する前に解約してください。
+univa_pay.error.shopping.subscription.member_required: 定期購入商品が含まれているため、ゲスト購入はご利用いただけません。ログインまたは会員登録を行ってください。
 
 univa_pay.error.api.subscription.cancel.failed: サブスクリプションの解約に失敗しました。
