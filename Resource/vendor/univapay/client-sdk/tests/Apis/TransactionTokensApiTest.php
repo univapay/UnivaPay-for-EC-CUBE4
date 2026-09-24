@@ -60,17 +60,19 @@ class TransactionTokensApiTest extends BaseTestController
                 '13-33d3e07ede13","email":"test@test.com","payment_type":"card","active":true,"m' .
                 'ode":"live","type":"recurring","usage_limit":null,"confirmed":null,"metadata":{' .
                 '"univapay-link-id":"11f11e85-1b45-dace-bf3d-cbcae52f65fc","univapay-name":"test' .
-                '","univapay-phone-number":"+81 08012341234"},"created_on":"2026-03-13T02:39:52.' .
-                '908468Z","updated_on":"2026-03-13T02:39:52.908468Z","last_used_on":null,"data":' .
-                '{"card":{"cardholder":"TEST TEST","exp_month":9,"exp_year":2026,"card_bin":"424' .
-                '242","last_four":"424242","brand":"visa","card_type":"credit","country":"JP","c' .
-                'ategory":"standard","issuer":"issuer","sub_brand":"none"},"billing":{"line1":nu' .
-                'll,"line2":null,"state":null,"city":null,"country":null,"zip":null,"phone_numbe' .
-                'r":{"country_code":81,"local_number":"08012341234"}},"cvv_authorize":{"enabled"' .
-                ':false,"status":null,"charge_id":null,"credentials_id":null,"currency":null},"c' .
-                'vv_authorize_check":{"status":null,"charge_id":null,"date":null},"three_ds":{"e' .
-                'nabled":true,"status":"pending","redirect_endpoint":"https://univapay.com/redir' .
-                'ect/index.html","error":null,"exempted":false}}}'
+                '","univapay-phone-number":"+81 08012341234","items":["productName: Cherry Ice S' .
+                'andwich, price: 3080, quantity: 1","productName: Shipping, price: 200, quantity' .
+                ': 1"],"order_no":1,"note":null},"created_on":"2026-03-13T02:39:52.908468Z","upd' .
+                'ated_on":"2026-03-13T02:39:52.908468Z","last_used_on":null,"data":{"card":{"car' .
+                'dholder":"TEST TEST","exp_month":9,"exp_year":2026,"card_bin":"424242","last_fo' .
+                'ur":"424242","brand":"visa","card_type":"credit","country":"JP","category":"sta' .
+                'ndard","issuer":"issuer","sub_brand":"none"},"billing":{"line1":null,"line2":nu' .
+                'll,"state":null,"city":null,"country":null,"zip":null,"phone_number":{"country_' .
+                'code":81,"local_number":"08012341234"}},"cvv_authorize":{"enabled":false,"statu' .
+                's":null,"charge_id":null,"credentials_id":null,"currency":null},"cvv_authorize_' .
+                'check":{"status":null,"charge_id":null,"date":null},"three_ds":{"enabled":true,' .
+                '"status":"pending","redirect_endpoint":"https://univapay.com/redirect/index.htm' .
+                'l","error":null,"exempted":false}}}'
             )))
             ->assert();
     }
@@ -208,17 +210,19 @@ class TransactionTokensApiTest extends BaseTestController
                 '13-33d3e07ede13","email":"test@test.com","payment_type":"card","active":true,"m' .
                 'ode":"live","type":"recurring","usage_limit":null,"confirmed":null,"metadata":{' .
                 '"univapay-link-id":"11f11e85-1b45-dace-bf3d-cbcae52f65fc","univapay-name":"test' .
-                '","univapay-phone-number":"+81 08012341234"},"created_on":"2026-03-13T02:39:52.' .
-                '908468Z","updated_on":"2026-03-13T02:39:52.908468Z","last_used_on":null,"data":' .
-                '{"card":{"cardholder":"TEST TEST","exp_month":9,"exp_year":2026,"card_bin":"424' .
-                '242","last_four":"424242","brand":"visa","card_type":"credit","country":"JP","c' .
-                'ategory":"standard","issuer":"issuer","sub_brand":"none"},"billing":{"line1":nu' .
-                'll,"line2":null,"state":null,"city":null,"country":null,"zip":null,"phone_numbe' .
-                'r":{"country_code":81,"local_number":"08012341234"}},"cvv_authorize":{"enabled"' .
-                ':false,"status":null,"charge_id":null,"credentials_id":null,"currency":null},"c' .
-                'vv_authorize_check":{"status":null,"charge_id":null,"date":null},"three_ds":{"e' .
-                'nabled":true,"status":"pending","redirect_endpoint":"https://univapay.com/redir' .
-                'ect/index.html","error":null,"exempted":false}}}'
+                '","univapay-phone-number":"+81 08012341234","items":["productName: Cherry Ice S' .
+                'andwich, price: 3080, quantity: 1","productName: Shipping, price: 200, quantity' .
+                ': 1"],"order_no":1,"note":null},"created_on":"2026-03-13T02:39:52.908468Z","upd' .
+                'ated_on":"2026-03-13T02:39:52.908468Z","last_used_on":null,"data":{"card":{"car' .
+                'dholder":"TEST TEST","exp_month":9,"exp_year":2026,"card_bin":"424242","last_fo' .
+                'ur":"424242","brand":"visa","card_type":"credit","country":"JP","category":"sta' .
+                'ndard","issuer":"issuer","sub_brand":"none"},"billing":{"line1":null,"line2":nu' .
+                'll,"state":null,"city":null,"country":null,"zip":null,"phone_number":{"country_' .
+                'code":81,"local_number":"08012341234"}},"cvv_authorize":{"enabled":false,"statu' .
+                's":null,"charge_id":null,"credentials_id":null,"currency":null},"cvv_authorize_' .
+                'check":{"status":null,"charge_id":null,"date":null},"three_ds":{"enabled":true,' .
+                '"status":"pending","redirect_endpoint":"https://univapay.com/redirect/index.htm' .
+                'l","error":null,"exempted":false}}}'
             )))
             ->assert();
     }
@@ -253,17 +257,19 @@ class TransactionTokensApiTest extends BaseTestController
                 '13-33d3e07ede13","email":"test@test.com","payment_type":"card","active":true,"m' .
                 'ode":"live","type":"recurring","usage_limit":null,"confirmed":null,"metadata":{' .
                 '"univapay-link-id":"11f11e85-1b45-dace-bf3d-cbcae52f65fc","univapay-name":"test' .
-                '","univapay-phone-number":"+81 08012341234"},"created_on":"2026-03-13T02:39:52.' .
-                '908468Z","updated_on":"2026-03-13T02:39:52.908468Z","last_used_on":null,"data":' .
-                '{"card":{"cardholder":"TEST TEST","exp_month":9,"exp_year":2026,"card_bin":"424' .
-                '242","last_four":"424242","brand":"visa","card_type":"credit","country":"JP","c' .
-                'ategory":"standard","issuer":"issuer","sub_brand":"none"},"billing":{"line1":nu' .
-                'll,"line2":null,"state":null,"city":null,"country":null,"zip":null,"phone_numbe' .
-                'r":{"country_code":81,"local_number":"08012341234"}},"cvv_authorize":{"enabled"' .
-                ':false,"status":null,"charge_id":null,"credentials_id":null,"currency":null},"c' .
-                'vv_authorize_check":{"status":null,"charge_id":null,"date":null},"three_ds":{"e' .
-                'nabled":true,"status":"pending","redirect_endpoint":"https://univapay.com/redir' .
-                'ect/index.html","error":null,"exempted":false}}}'
+                '","univapay-phone-number":"+81 08012341234","items":["productName: Cherry Ice S' .
+                'andwich, price: 3080, quantity: 1","productName: Shipping, price: 200, quantity' .
+                ': 1"],"order_no":1,"note":null},"created_on":"2026-03-13T02:39:52.908468Z","upd' .
+                'ated_on":"2026-03-13T02:39:52.908468Z","last_used_on":null,"data":{"card":{"car' .
+                'dholder":"TEST TEST","exp_month":9,"exp_year":2026,"card_bin":"424242","last_fo' .
+                'ur":"424242","brand":"visa","card_type":"credit","country":"JP","category":"sta' .
+                'ndard","issuer":"issuer","sub_brand":"none"},"billing":{"line1":null,"line2":nu' .
+                'll,"state":null,"city":null,"country":null,"zip":null,"phone_number":{"country_' .
+                'code":81,"local_number":"08012341234"}},"cvv_authorize":{"enabled":false,"statu' .
+                's":null,"charge_id":null,"credentials_id":null,"currency":null},"cvv_authorize_' .
+                'check":{"status":null,"charge_id":null,"date":null},"three_ds":{"enabled":true,' .
+                '"status":"pending","redirect_endpoint":"https://univapay.com/redirect/index.htm' .
+                'l","error":null,"exempted":false}}}'
             )))
             ->assert();
     }
@@ -308,17 +314,19 @@ class TransactionTokensApiTest extends BaseTestController
                 '13-33d3e07ede13","email":"test@test.com","payment_type":"card","active":true,"m' .
                 'ode":"live","type":"recurring","usage_limit":null,"confirmed":null,"metadata":{' .
                 '"univapay-link-id":"11f11e85-1b45-dace-bf3d-cbcae52f65fc","univapay-name":"test' .
-                '","univapay-phone-number":"+81 08012341234"},"created_on":"2026-03-13T02:39:52.' .
-                '908468Z","updated_on":"2026-03-13T02:39:52.908468Z","last_used_on":null,"data":' .
-                '{"card":{"cardholder":"TEST TEST","exp_month":9,"exp_year":2026,"card_bin":"424' .
-                '242","last_four":"424242","brand":"visa","card_type":"credit","country":"JP","c' .
-                'ategory":"standard","issuer":"issuer","sub_brand":"none"},"billing":{"line1":nu' .
-                'll,"line2":null,"state":null,"city":null,"country":null,"zip":null,"phone_numbe' .
-                'r":{"country_code":81,"local_number":"08012341234"}},"cvv_authorize":{"enabled"' .
-                ':false,"status":null,"charge_id":null,"credentials_id":null,"currency":null},"c' .
-                'vv_authorize_check":{"status":null,"charge_id":null,"date":null},"three_ds":{"e' .
-                'nabled":true,"status":"pending","redirect_endpoint":"https://univapay.com/redir' .
-                'ect/index.html","error":null,"exempted":false}}}'
+                '","univapay-phone-number":"+81 08012341234","items":["productName: Cherry Ice S' .
+                'andwich, price: 3080, quantity: 1","productName: Shipping, price: 200, quantity' .
+                ': 1"],"order_no":1,"note":null},"created_on":"2026-03-13T02:39:52.908468Z","upd' .
+                'ated_on":"2026-03-13T02:39:52.908468Z","last_used_on":null,"data":{"card":{"car' .
+                'dholder":"TEST TEST","exp_month":9,"exp_year":2026,"card_bin":"424242","last_fo' .
+                'ur":"424242","brand":"visa","card_type":"credit","country":"JP","category":"sta' .
+                'ndard","issuer":"issuer","sub_brand":"none"},"billing":{"line1":null,"line2":nu' .
+                'll,"state":null,"city":null,"country":null,"zip":null,"phone_number":{"country_' .
+                'code":81,"local_number":"08012341234"}},"cvv_authorize":{"enabled":false,"statu' .
+                's":null,"charge_id":null,"credentials_id":null,"currency":null},"cvv_authorize_' .
+                'check":{"status":null,"charge_id":null,"date":null},"three_ds":{"enabled":true,' .
+                '"status":"pending","redirect_endpoint":"https://univapay.com/redirect/index.htm' .
+                'l","error":null,"exempted":false}}}'
             )))
             ->assert();
     }
@@ -345,17 +353,19 @@ class TransactionTokensApiTest extends BaseTestController
                 '13-33d3e07ede13","email":"test@test.com","payment_type":"card","active":true,"m' .
                 'ode":"live","type":"recurring","usage_limit":null,"confirmed":null,"metadata":{' .
                 '"univapay-link-id":"11f11e85-1b45-dace-bf3d-cbcae52f65fc","univapay-name":"test' .
-                '","univapay-phone-number":"+81 08012341234"},"created_on":"2026-03-13T02:39:52.' .
-                '908468Z","updated_on":"2026-03-13T02:39:52.908468Z","last_used_on":null,"data":' .
-                '{"card":{"cardholder":"TEST TEST","exp_month":9,"exp_year":2026,"card_bin":"424' .
-                '242","last_four":"424242","brand":"visa","card_type":"credit","country":"JP","c' .
-                'ategory":"standard","issuer":"issuer","sub_brand":"none"},"billing":{"line1":nu' .
-                'll,"line2":null,"state":null,"city":null,"country":null,"zip":null,"phone_numbe' .
-                'r":{"country_code":81,"local_number":"08012341234"}},"cvv_authorize":{"enabled"' .
-                ':false,"status":null,"charge_id":null,"credentials_id":null,"currency":null},"c' .
-                'vv_authorize_check":{"status":null,"charge_id":null,"date":null},"three_ds":{"e' .
-                'nabled":true,"status":"pending","redirect_endpoint":"https://univapay.com/redir' .
-                'ect/index.html","error":null,"exempted":false}}}'
+                '","univapay-phone-number":"+81 08012341234","items":["productName: Cherry Ice S' .
+                'andwich, price: 3080, quantity: 1","productName: Shipping, price: 200, quantity' .
+                ': 1"],"order_no":1,"note":null},"created_on":"2026-03-13T02:39:52.908468Z","upd' .
+                'ated_on":"2026-03-13T02:39:52.908468Z","last_used_on":null,"data":{"card":{"car' .
+                'dholder":"TEST TEST","exp_month":9,"exp_year":2026,"card_bin":"424242","last_fo' .
+                'ur":"424242","brand":"visa","card_type":"credit","country":"JP","category":"sta' .
+                'ndard","issuer":"issuer","sub_brand":"none"},"billing":{"line1":null,"line2":nu' .
+                'll,"state":null,"city":null,"country":null,"zip":null,"phone_number":{"country_' .
+                'code":81,"local_number":"08012341234"}},"cvv_authorize":{"enabled":false,"statu' .
+                's":null,"charge_id":null,"credentials_id":null,"currency":null},"cvv_authorize_' .
+                'check":{"status":null,"charge_id":null,"date":null},"three_ds":{"enabled":true,' .
+                '"status":"pending","redirect_endpoint":"https://univapay.com/redirect/index.htm' .
+                'l","error":null,"exempted":false}}}'
             )))
             ->assert();
     }

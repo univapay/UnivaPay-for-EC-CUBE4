@@ -122,7 +122,13 @@ if ($apiResponse->isSuccess()) {
   "metadata": {
     "univapay-link-id": "11f11e85-1b45-dace-bf3d-cbcae52f65fc",
     "univapay-name": "test",
-    "univapay-phone-number": "+81 08012341234"
+    "univapay-phone-number": "+81 08012341234",
+    "items": [
+      "productName: Cherry Ice Sandwich, price: 3080, quantity: 1",
+      "productName: Shipping, price: 200, quantity: 1"
+    ],
+    "order_no": 1,
+    "note": null
   },
   "created_on": "2026-03-13T02:39:52.908468Z",
   "updated_on": "2026-03-13T02:39:52.908468Z",
@@ -577,7 +583,13 @@ if ($apiResponse->isSuccess()) {
   "metadata": {
     "univapay-link-id": "11f11e85-1b45-dace-bf3d-cbcae52f65fc",
     "univapay-name": "test",
-    "univapay-phone-number": "+81 08012341234"
+    "univapay-phone-number": "+81 08012341234",
+    "items": [
+      "productName: Cherry Ice Sandwich, price: 3080, quantity: 1",
+      "productName: Shipping, price: 200, quantity: 1"
+    ],
+    "order_no": 1,
+    "note": null
   },
   "created_on": "2026-03-13T02:39:52.908468Z",
   "updated_on": "2026-03-13T02:39:52.908468Z",
@@ -748,7 +760,13 @@ if ($apiResponse->isSuccess()) {
   "metadata": {
     "univapay-link-id": "11f11e85-1b45-dace-bf3d-cbcae52f65fc",
     "univapay-name": "test",
-    "univapay-phone-number": "+81 08012341234"
+    "univapay-phone-number": "+81 08012341234",
+    "items": [
+      "productName: Cherry Ice Sandwich, price: 3080, quantity: 1",
+      "productName: Shipping, price: 200, quantity: 1"
+    ],
+    "order_no": 1,
+    "note": null
   },
   "created_on": "2026-03-13T02:39:52.908468Z",
   "updated_on": "2026-03-13T02:39:52.908468Z",
@@ -959,7 +977,13 @@ if ($apiResponse->isSuccess()) {
   "metadata": {
     "univapay-link-id": "11f11e85-1b45-dace-bf3d-cbcae52f65fc",
     "univapay-name": "test",
-    "univapay-phone-number": "+81 08012341234"
+    "univapay-phone-number": "+81 08012341234",
+    "items": [
+      "productName: Cherry Ice Sandwich, price: 3080, quantity: 1",
+      "productName: Shipping, price: 200, quantity: 1"
+    ],
+    "order_no": 1,
+    "note": null
   },
   "created_on": "2026-03-13T02:39:52.908468Z",
   "updated_on": "2026-03-13T02:39:52.908468Z",
@@ -1092,7 +1116,13 @@ if ($apiResponse->isSuccess()) {
   "metadata": {
     "univapay-link-id": "11f11e85-1b45-dace-bf3d-cbcae52f65fc",
     "univapay-name": "test",
-    "univapay-phone-number": "+81 08012341234"
+    "univapay-phone-number": "+81 08012341234",
+    "items": [
+      "productName: Cherry Ice Sandwich, price: 3080, quantity: 1",
+      "productName: Shipping, price: 200, quantity: 1"
+    ],
+    "order_no": 1,
+    "note": null
   },
   "created_on": "2026-03-13T02:39:52.908468Z",
   "updated_on": "2026-03-13T02:39:52.908468Z",

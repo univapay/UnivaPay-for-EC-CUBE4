@@ -80,9 +80,9 @@
             ),
         ),
         'univapay/client-sdk' => array(
-            'pretty_version' => '1.2.2',
-            'version' => '1.2.2.0',
-            'reference' => '1f39e9ddc350f9885ee072760f765ced32805250',
+            'pretty_version' => '1.2.3',
+            'version' => '1.2.3.0',
+            'reference' => 'cf3b5a428e2c0067de2559eef0fed1a3ae07c84c',
             'type' => 'library',
             'install_path' => __DIR__ . '/../univapay/client-sdk',
             'aliases' => array(),

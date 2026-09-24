@@ -159,7 +159,7 @@ class QrScanTransactionTokenBuilder
     /**
      * Sets metadata field.
      *
-     * @param array<string,string|float|bool>|null $value
+     * @param array<string,string|null|int|float|bool>|null $value
      */
     public function metadata(?array $value): self
     {

@@ -1,21 +1,23 @@
 
 # Transaction Token Metadata Additional Properties
 
-Transaction Token Metadata Additional Properties schema.
+Alias of GenericMetadataValue, retained because this schema name is part of the published SDK surface. Do not narrow it — see GenericMetadataValue for the contract.
 
 ## Data Type
 
-`string|float|bool`
+`string|null|int|float|bool`
 
 ## Cases
 
 | Type |
 |  --- |
-| `string` |
+| `?string` |
+| `int` |
 | `float` |
 | `bool` |
+| [`array<?string\|int\|float\|bool>`](../../../doc/models/containers/generic-metadata-array-item.md) |
 
-## string
+## ?string
 
 ### Initialization Code
 
@@ -25,7 +27,7 @@ Transaction Token Metadata Additional Properties schema.
 $value = 'sale';
 ```
 
-## float
+## int
 
 ### Initialization Code
 
@@ -33,6 +35,16 @@ $value = 'sale';
 
 ```php
 $value = 10;
+```
+
+## float
+
+### Initialization Code
+
+#### Example
+
+```php
+$value = 10.5;
 ```
 
 ## bool
@@ -43,5 +55,18 @@ $value = 10;
 
 ```php
 $value = true;
+```
+
+## array<?string|int|float|bool>
+
+### Initialization Code
+
+#### Example
+
+```php
+$value = [
+    'sale',
+    'promo'
+];
 ```
 

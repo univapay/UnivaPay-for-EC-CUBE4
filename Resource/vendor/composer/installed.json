@@ -344,17 +344,17 @@
         },
         {
             "name": "univapay/client-sdk",
-            "version": "1.2.2",
-            "version_normalized": "1.2.2.0",
+            "version": "1.2.3",
+            "version_normalized": "1.2.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/univapay/univapay-client-php-sdk.git",
-                "reference": "1f39e9ddc350f9885ee072760f765ced32805250"
+                "reference": "cf3b5a428e2c0067de2559eef0fed1a3ae07c84c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/univapay/univapay-client-php-sdk/zipball/1f39e9ddc350f9885ee072760f765ced32805250",
-                "reference": "1f39e9ddc350f9885ee072760f765ced32805250",
+                "url": "https://api.github.com/repos/univapay/univapay-client-php-sdk/zipball/cf3b5a428e2c0067de2559eef0fed1a3ae07c84c",
+                "reference": "cf3b5a428e2c0067de2559eef0fed1a3ae07c84c",
                 "shasum": ""
             },
             "require": {
@@ -371,7 +371,7 @@
                 "phpunit/phpunit": "^7.5 || ^8.5 || ^9.5 || ^10.0 || ^11.0",
                 "squizlabs/php_codesniffer": "^3.5"
             },
-            "time": "2026-08-20T08:18:22+00:00",
+            "time": "2026-09-14T08:43:10+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -387,7 +387,7 @@
             "homepage": "https://univapay.com",
             "support": {
                 "issues": "https://github.com/univapay/univapay-client-php-sdk/issues",
-                "source": "https://github.com/univapay/univapay-client-php-sdk/tree/1.2.2"
+                "source": "https://github.com/univapay/univapay-client-php-sdk/tree/1.2.3"
             },
             "install-path": "../univapay/client-sdk"
         }

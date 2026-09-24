@@ -36,19 +36,19 @@ We will assume that all requests are going to originate from a backend server th
 Run the following command to install the package and automatically add the dependency to your composer.json file:
 
 ```bash
-composer require "univapay/client-sdk:1.2.2"
+composer require "univapay/client-sdk:1.2.3"
 ```
 
 Or add it to the composer.json file manually as given below:
 
 ```json
 "require": {
-    "univapay/client-sdk": "1.2.2"
+    "univapay/client-sdk": "1.2.3"
 }
 ```
 
 You can also view the package at:
-https://packagist.org/packages/univapay/client-sdk#1.2.2
+https://packagist.org/packages/univapay/client-sdk#1.2.3
 
 ## Test the SDK
 

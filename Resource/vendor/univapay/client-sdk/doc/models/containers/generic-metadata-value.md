@@ -5,18 +5,19 @@ Allowed values for metadata properties. Values may be a string, number, boolean,
 
 ## Data Type
 
-`string|float|bool|array[]`
+`string|null|int|float|bool`
 
 ## Cases
 
 | Type |
 |  --- |
-| `string` |
+| `?string` |
+| `int` |
 | `float` |
 | `bool` |
-| `array[]` |
+| [`array<?string\|int\|float\|bool>`](../../../doc/models/containers/generic-metadata-array-item.md) |
 
-## string
+## ?string
 
 ### Initialization Code
 
@@ -26,7 +27,7 @@ Allowed values for metadata properties. Values may be a string, number, boolean,
 $value = 'sale';
 ```
 
-## float
+## int
 
 ### Initialization Code
 
@@ -34,6 +35,16 @@ $value = 'sale';
 
 ```php
 $value = 10;
+```
+
+## float
+
+### Initialization Code
+
+#### Example
+
+```php
+$value = 10.5;
 ```
 
 ## bool
@@ -46,7 +57,7 @@ $value = 10;
 $value = true;
 ```
 
-## array[]
+## array<?string|int|float|bool>
 
 ### Initialization Code
 
@@ -54,8 +65,8 @@ $value = true;
 
 ```php
 $value = [
-    ApiHelper::deserialize('"sale"'),
-    ApiHelper::deserialize('"promo"')
+    'sale',
+    'promo'
 ];
 ```
 

@@ -62,7 +62,7 @@ class TransactionTokenBase implements \JsonSerializable
     private $confirmed = [];
 
     /**
-     * @var array<string,string|float|bool>|null
+     * @var array<string,string|null|int|float|bool>|null
      */
     private $metadata;
 
@@ -283,7 +283,7 @@ class TransactionTokenBase implements \JsonSerializable
      * Returns Metadata.
      * Arbitrary key-value metadata.
      *
-     * @return array<string,string|float|bool>|null
+     * @return array<string,string|null|int|float|bool>|null
      */
     public function getMetadata(): ?array
     {
@@ -295,9 +295,9 @@ class TransactionTokenBase implements \JsonSerializable
      * Arbitrary key-value metadata.
      *
      * @maps metadata
-     * @mapsBy anyOf(array<string,anyOf(string,float,bool)>,null)
+     * @mapsBy anyOf(array<string,anyOf(anyOf(string,null),int,float,bool,anyOf(anyOf(string,null),int,float,bool)[])>,null)
      *
-     * @param array<string,string|float|bool>|null $metadata
+     * @param array<string,string|null|int|float|bool>|null $metadata
      */
     public function setMetadata(?array $metadata): void
     {
@@ -495,7 +495,8 @@ class TransactionTokenBase implements \JsonSerializable
             $json['metadata']     =
                 ApiHelper::getJsonHelper()->verifyTypes(
                     $this->metadata,
-                    'anyOf(array<string,anyOf(string,float,bool)>,null)'
+                    'anyOf(array<string,anyOf(anyOf(string,null),int,float,bool,anyOf(anyOf(string,nu' .
+                    'll),int,float,bool)[])>,null)'
                 );
         }
         if (isset($this->createdOn)) {
