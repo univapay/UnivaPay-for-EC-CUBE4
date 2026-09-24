@@ -75,7 +75,7 @@ class GenericMetadataBuilder
      * Add an additional property to this model.
      *
      * @param string $name Name of property.
-     * @param string|float|bool|array[] $value Value of property.
+     * @param string|null|int|float|bool $value Value of property.
      */
     public function additionalProperty(string $name, $value): self
     {

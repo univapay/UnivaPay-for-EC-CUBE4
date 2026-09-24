@@ -27,7 +27,6 @@ use UnivaPay\Models\Builders\TransactionHistoryItemBuilder;
 use UnivaPay\Models\TransactionHistoryType;
 use UnivaPay\Models\TransactionHistoryStatus;
 use UnivaPay\Models\Builders\GenericMetadataBuilder;
-use UnivaPay\ApiHelper;
 use UnivaPay\Utils\DateTimeHelper;
 use UnivaPay\Models\TransactionHistoryMode;
 use UnivaPay\Models\TransactionHistoryPaymentType;
@@ -36,6 +35,7 @@ use UnivaPay\Models\TransactionHistoryServiceProvider;
 use UnivaPay\Models\Builders\TransactionHistoryRefundBuilder;
 use UnivaPay\Models\TransactionHistoryRefundStatus;
 use UnivaPay\Models\TransactionHistoryRefundReason;
+use UnivaPay\ApiHelper;
 use UnivaPay\Models\TransactionHistoryChargeType;
 
 $transactionHistoryList = TransactionHistoryListBuilder::init()

@@ -149,10 +149,10 @@ class TransactionTokenCreateRequestMetadata implements \JsonSerializable
     /**
      * Add an additional property to this model.
      *
-     * @mapsBy oneOf(string,bool,float)
+     * @mapsBy anyOf(anyOf(string,null),int,float,bool,anyOf(anyOf(string,null),int,float,bool)[])
      *
      * @param string $name Name of property.
-     * @param string|bool|float $value Value of property.
+     * @param string|null|int|float|bool $value Value of property.
      */
     public function addAdditionalProperty(string $name, $value)
     {
@@ -170,7 +170,7 @@ class TransactionTokenCreateRequestMetadata implements \JsonSerializable
      *
      * @param string $name Name of property.
      *
-     * @return string|bool|float|false Value of the property.
+     * @return string|null|int|float|bool|false Value of the property.
      */
     public function findAdditionalProperty(string $name)
     {
@@ -187,7 +187,11 @@ class TransactionTokenCreateRequestMetadata implements \JsonSerializable
     {
         return array_map(
             function ($value) {
-                return ApiHelper::getJsonHelper()->verifyTypes($value, 'oneOf(string,bool,float)');
+                return ApiHelper::getJsonHelper()
+                    ->verifyTypes(
+                        $value,
+                        'anyOf(anyOf(string,null),int,float,bool,anyOf(anyOf(string,null),int,float,bool)[])'
+                    );
             },
             $this->additionalProperties
         );

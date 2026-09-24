@@ -122,16 +122,54 @@ final class AppJwt
      *
      * @throws \RuntimeException When $storeId is null.
      */
-    public static function requireStoreId(?string $storeId): string
-    {
+    public static function requireStoreId(
+        ?string $storeId,
+        string $shortcut,
+        string $explicit
+    ): string {
         if ($storeId === null) {
             throw new \RuntimeException(
-                'getCharge(chargeId) requires a store-level App Token: the configured token '
+                $shortcut . ' requires a store-level App Token: the configured token '
                 . 'carries no usable "store_id" claim. Use a store-level App Token, or call '
-                . 'getCharge(storeId, chargeId) on ChargesApi with an explicit store id.'
+                . $explicit . ' with an explicit store id.'
             );
         }
 
         return $storeId;
+    }
+
+    /**
+     * Asserts that a merchant id was resolvable from the configured app token.
+     *
+     * The store guard's sibling, for the one shortcut whose endpoint is scoped
+     * by both ids (listSubscriptionCharges). Every app token carries a
+     * `merchant_id`, so unlike the store guard this is not a case callers are
+     * expected to hit: it fires only for a token that could not be decoded at
+     * all, and exists so that failure surfaces locally instead of as a request
+     * to /merchants//... .
+     *
+     * @param string|null $merchantId The merchant id read from the token.
+     * @param string      $shortcut   The calling shortcut's signature.
+     * @param string      $explicit   The explicit-ids call to fall back to.
+     *
+     * @return string $merchantId, when it is present.
+     *
+     * @throws \RuntimeException When it is not.
+     */
+    public static function requireMerchantId(
+        ?string $merchantId,
+        string $shortcut,
+        string $explicit
+    ): string {
+        if ($merchantId === null) {
+            // Same rule as the store guard: nothing about the token or its claims.
+            throw new \RuntimeException(
+                $shortcut . ' requires an App Token carrying a merchant: the configured token '
+                . 'carries no usable "merchant_id" claim. Use a valid App Token, or call '
+                . $explicit . ' with an explicit merchant id.'
+            );
+        }
+
+        return $merchantId;
     }
 }
