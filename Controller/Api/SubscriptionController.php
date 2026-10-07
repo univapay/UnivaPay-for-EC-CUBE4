@@ -19,6 +19,7 @@ use Plugin\UnivaPay\Entity\Config;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\SDK;
+use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -136,7 +137,7 @@ class SubscriptionController extends AbstractController
         $authHeader = $request->headers->get('Authorization') || $request->headers->get('authorization');
 
         if ($config->getWebhookAuth() !== $authHeader) {
-            log_info('Invalid webhook authorization attempt', ['provided' => $authHeader]);
+            UnivaPayLogger::get()->info('Invalid webhook authorization attempt', ['provided' => $authHeader]);
 
             return false;
         }
@@ -259,7 +260,7 @@ class SubscriptionController extends AbstractController
                 $this->entityManager->persist($order);
                 $this->entityManager->flush();
             } catch (Exception $e) {
-                log_info('Failed to cancel subscription', [
+                UnivaPayLogger::get()->info('Failed to cancel subscription', [
                     'order_id' => $order->getId(),
                     'error' => $e->getMessage(),
                 ]);

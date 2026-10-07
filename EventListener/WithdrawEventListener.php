@@ -7,6 +7,7 @@ use Eccube\Event\EventArgs;
 use Eccube\Repository\OrderRepository;
 use Exception;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
+use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -69,7 +70,7 @@ class WithdrawEventListener implements EventSubscriberInterface
         ]);
 
         if (count($activeSubscriptions) > 0) {
-            log_info('Customer: '.$customer->getId().' has active subscriptions');
+            UnivaPayLogger::get()->info('Customer: '.$customer->getId().' has active subscriptions');
             $this->session->getFlashBag()->add('eccube.front.error', trans('univa_pay.error.customer.withdraw.has_subscription'));
             throw new Exception(trans('univa_pay.error.customer.withdraw.has_subscription'));
         }

@@ -4,7 +4,6 @@ namespace Plugin\UnivaPay\Util;
 
 require_once __DIR__.'/../Resource/vendor/autoload.php';
 
-use Eccube\Application;
 use Plugin\UnivaPay\Entity\Config;
 use Psr\Log\LoggerInterface;
 use UnivaPay\Authentication\BearerAuthCredentialsBuilder;
@@ -28,7 +27,7 @@ class SDK
 
     public function __construct(Config $config, ?UnivapayClientSdkClient $client = null, ?LoggerInterface $logger = null)
     {
-        $this->logger = $logger ?? Application::getInstance()['eccube.logger'];
+        $this->logger = $logger ?? UnivaPayLogger::get();
         $this->client = $client ?? UnivapayClientSdkClientBuilder::init()
             ->bearerAuthCredentials(
                 BearerAuthCredentialsBuilder::init(

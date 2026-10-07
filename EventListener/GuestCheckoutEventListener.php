@@ -3,6 +3,7 @@
 namespace Plugin\UnivaPay\EventListener;
 
 use Plugin\UnivaPay\Util\SubscriptionCartChecker;
+use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -66,7 +67,7 @@ class GuestCheckoutEventListener implements EventSubscriberInterface
             return;
         }
 
-        log_info('[UnivaPay] 定期購入商品がカートにあるため非会員購入をブロックしました.', [$request->attributes->get('_route')]);
+        UnivaPayLogger::get()->info('[UnivaPay] 定期購入商品がカートにあるため非会員購入をブロックしました.', [$request->attributes->get('_route')]);
 
         if ($request->isXmlHttpRequest()) {
             $event->setResponse(new JsonResponse(['status' => 'NG'], 403));

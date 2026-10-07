@@ -12,6 +12,7 @@ use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\Constants;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\UnivaPayApiException;
+use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Swift_Mailer;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -111,7 +112,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
             return;
         }
 
-        log_info('サブスク停止処理開始', ['order' => $order->getId()]);
+        UnivaPayLogger::get()->info('サブスク停止処理開始', ['order' => $order->getId()]);
 
         $util = new SDK($this->configRepository->findOneById(1));
 
@@ -149,7 +150,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
 
     private function sendEmailCancelSubscription($order)
     {
-        log_info('サブスク停止メール送信開始');
+        UnivaPayLogger::get()->info('サブスク停止メール送信開始');
 
         $MailTemplate = $this->mailTemplateRepository->findOneBy([
             'name' => Constants::MAIL_TEMPLATE_UNIVAPAY_SUBSCRIPTION_CANCEL,
@@ -185,6 +186,6 @@ class SubscriptionEventListener implements EventSubscriberInterface
         }
         $this->mailHistoryRepository->save($MailHistory);
 
-        log_info('サブスク停止メール送信完了', ['count' => $count]);
+        UnivaPayLogger::get()->info('サブスク停止メール送信完了', ['count' => $count]);
     }
 }
