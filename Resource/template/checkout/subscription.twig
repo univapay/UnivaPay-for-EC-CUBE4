@@ -21,12 +21,12 @@
 {% endfor %}
 
 {% set subscriptionTotal = subscriptionTotal == 0 ? Order.payment_total : Order.payment_total - Order.discount  %}
-{{ form_widget(form.univa_pay_subscription_id) }}
+{{ form_widget(form.univa_pay_parent_subscription_id) }}
 
 <script src="{{ config.getWidgetUrl() }}/client/checkout.js"></script>
 <script>
     form = document.querySelector("#shopping-form");
-    subscriptionId = document.querySelector("#shopping_order_univa_pay_subscription_id");
+    subscriptionId = document.querySelector("#shopping_order_univa_pay_parent_subscription_id");
     form.appendChild(subscriptionId);
     isSuccess = false;
     checkout = UnivapayCheckout.create({

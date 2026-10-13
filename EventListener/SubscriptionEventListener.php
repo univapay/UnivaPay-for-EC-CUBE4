@@ -96,12 +96,12 @@ class SubscriptionEventListener implements EventSubscriberInterface
         $util = new SDK($this->configRepository->findOneById(1));
 
         $this->guard(function () use ($util, $order) {
-            $subscription = $util->getSubscription($order->getUnivapaySubscriptionId());
+            $subscription = $util->getSubscription($order->getUnivapayParentSubscriptionId());
             if ($subscription->getStatus() === SubscriptionStatus::SUSPENDED) {
                 return;
             }
 
-            $util->suspendSubscription($order->getUnivapaySubscriptionId());
+            $util->suspendSubscription($order->getUnivapayParentSubscriptionId());
         });
     }
 
@@ -117,10 +117,10 @@ class SubscriptionEventListener implements EventSubscriberInterface
         $util = new SDK($this->configRepository->findOneById(1));
 
         $this->guard(function () use ($util, $order) {
-            $subscription = $util->getSubscription($order->getUnivapaySubscriptionId());
+            $subscription = $util->getSubscription($order->getUnivapayParentSubscriptionId());
             if ($subscription->getStatus() !== SubscriptionStatus::CANCELED) {
-                $util->cancelSubscription($order->getUnivapaySubscriptionId());
-                $subscription = $util->getSubscription($order->getUnivapaySubscriptionId());
+                $util->cancelSubscription($order->getUnivapayParentSubscriptionId());
+                $subscription = $util->getSubscription($order->getUnivapayParentSubscriptionId());
             }
 
             if ($subscription->getStatus() === SubscriptionStatus::CANCELED) {
@@ -139,12 +139,12 @@ class SubscriptionEventListener implements EventSubscriberInterface
         $util = new SDK($this->configRepository->findOneById(1));
 
         $this->guard(function () use ($util, $order) {
-            $subscription = $util->getSubscription($order->getUnivapaySubscriptionId());
+            $subscription = $util->getSubscription($order->getUnivapayParentSubscriptionId());
             if ($subscription->getStatus() === SubscriptionStatus::CURRENT) {
                 return;
             }
 
-            $util->unsuspendSubscription($order->getUnivapaySubscriptionId());
+            $util->unsuspendSubscription($order->getUnivapayParentSubscriptionId());
         });
     }
 

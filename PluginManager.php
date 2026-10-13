@@ -5,18 +5,23 @@ namespace Plugin\UnivaPay;
 require_once __DIR__.'/Resource/vendor/autoload.php';
 
 use Doctrine\ORM\EntityManagerInterface;
+use Eccube\Common\EccubeConfig;
 use Eccube\Entity\MailTemplate;
 use Eccube\Entity\Master\CustomerOrderStatus;
 use Eccube\Entity\Master\OrderStatus;
 use Eccube\Entity\Master\OrderStatusColor;
+use Eccube\Entity\Order;
 use Eccube\Entity\Payment;
 use Eccube\Entity\PaymentOption;
 use Eccube\Plugin\AbstractPluginManager;
+use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
+use Eccube\Service\PurchaseFlow\PurchaseContext;
 use Plugin\UnivaPay\Entity\Config;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use Plugin\UnivaPay\Service\Method\CreditCard;
 use Plugin\UnivaPay\Util\Constants;
+use Plugin\UnivaPay\Util\OrderCopier;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -24,7 +29,11 @@ use UnivaPay\Models\SubscriptionStatus;
 
 class PluginManager extends AbstractPluginManager
 {
-    // Only installs up to 1.5.0 have a dtb_payment row with this (now deleted) class.
+    /**
+     * Only installs up to 1.5.0 have a dtb_payment row with this (now deleted) class.
+     *
+     * @deprecated 1.5.0 migration only. Remove in the next release.
+     */
     const LEGACY_SUBSCRIPTION_METHOD_CLASS = 'Plugin\UnivaPay\Service\Method\Subscription';
 
     public function enable(array $meta, ContainerInterface $container)
@@ -40,7 +49,7 @@ class PluginManager extends AbstractPluginManager
 
     public function update(array $meta, ContainerInterface $container)
     {
-        // when migrating from 1.5.0
+        // when migrating from 1.5.0. Deprecated: remove this body with migrateLegacySubscriptions() in the next release.
         $entityManager = $container->get('doctrine')->getManager();
         if (!$entityManager->getRepository(Payment::class)->findOneBy(['method_class' => self::LEGACY_SUBSCRIPTION_METHOD_CLASS])) {
             return;
@@ -48,10 +57,12 @@ class PluginManager extends AbstractPluginManager
 
         $this->enable($meta, $container);
 
+        $orderNoProcessor = new OrderNoProcessor($container->get(EccubeConfig::class), $entityManager->getRepository(Order::class));
+
         $config = $entityManager->find(Config::class, 1);
         if (!$config || !$config->getAppId() || !$config->getAppSecret()) {
             UnivaPayLogger::get()->warning('[UnivaPay] API credentials not set, legacy subscriptions migrated as active');
-            $this->migrateLegacySubscriptions($entityManager, function () {
+            $this->migrateLegacySubscriptions($entityManager, $orderNoProcessor, function () {
                 return null;
             });
 
@@ -59,7 +70,7 @@ class PluginManager extends AbstractPluginManager
         }
 
         $sdk = null;
-        $this->migrateLegacySubscriptions($entityManager, function ($subscriptionId) use ($config, &$sdk) {
+        $this->migrateLegacySubscriptions($entityManager, $orderNoProcessor, function ($subscriptionId) use ($config, &$sdk) {
             if (!$sdk) {
                 $sdk = new SDK($config);
             }
@@ -68,7 +79,13 @@ class PluginManager extends AbstractPluginManager
         });
     }
 
-    public function migrateLegacySubscriptions(EntityManagerInterface $entityManager, callable $fetchSubscriptionStatus)
+    /**
+     * 1.5.0 used the first order as the parent, so this creates a new parent order without a charge id per subscription
+     * and copies univa_pay_parent_subscription_id to every existing order. Existing charge ids and statuses are not changed.
+     *
+     * @deprecated 1.5.0 migration only. Remove in the next release.
+     */
+    public function migrateLegacySubscriptions(EntityManagerInterface $entityManager, OrderNoProcessor $orderNoProcessor, callable $fetchSubscriptionStatus)
     {
         $paymentRepository = $entityManager->getRepository(Payment::class);
         $LegacyPayment = $paymentRepository->findOneBy(['method_class' => self::LEGACY_SUBSCRIPTION_METHOD_CLASS]);
@@ -77,28 +94,43 @@ class PluginManager extends AbstractPluginManager
         }
         $CreditCardPayment = $paymentRepository->findOneBy(['method_class' => CreditCard::class]);
 
-        $parents = $entityManager->createQuery(
-            'SELECT MIN(o.id) AS id, o.univa_pay_subscription_id AS subscription_id FROM Eccube\Entity\Order o
-             WHERE o.Payment = :legacy AND o.univa_pay_subscription_id IS NOT NULL
-             GROUP BY o.univa_pay_subscription_id'
-        )->setParameter('legacy', $LegacyPayment)->getArrayResult();
+        // ponytail: loads every legacy order into one unit of work; batch with flush/clear if shops have too many for memory
+        $legacyOrders = $entityManager->getRepository(Order::class)->findBy(['Payment' => $LegacyPayment], ['id' => 'ASC']);
+        $firstOrders = [];
+        $chargeIdCounts = [];
+        foreach ($legacyOrders as $order) {
+            $order->setPayment($CreditCardPayment);
+            $order->setPaymentMethod(Constants::UNIVAPAY_PAYMENT_METHOD);
 
-        $statusCounts = [];
-        foreach ($parents as $parent) {
-            $statusId = $this->resolveLegacyParentStatus($parent['subscription_id'], $fetchSubscriptionStatus);
-            $entityManager->createQuery(
-                'UPDATE Eccube\Entity\Order o SET o.OrderStatus = :status, o.univa_pay_charge_id = NULL WHERE o.id = :id'
-            )->setParameters(['status' => $statusId, 'id' => $parent['id']])->execute();
-            $statusCounts[$statusId] = (isset($statusCounts[$statusId]) ? $statusCounts[$statusId] : 0) + 1;
+            $subscriptionId = $order->getUnivapaySubscriptionId();
+            if ($subscriptionId === null) {
+                continue;
+            }
+            // univa_pay_subscription_id is left as is so 1.5.0 data survives until the column is dropped.
+            $order->setUnivapayParentSubscriptionId($subscriptionId);
+            if (!isset($firstOrders[$subscriptionId])) {
+                $firstOrders[$subscriptionId] = $order;
+            }
+            if ($order->getUnivapayChargeId() !== null) {
+                $chargeId = $order->getUnivapayChargeId();
+                $chargeIdCounts[$chargeId] = (isset($chargeIdCounts[$chargeId]) ? $chargeIdCounts[$chargeId] : 0) + 1;
+            }
         }
 
-        $entityManager->createQuery(
-            'UPDATE Eccube\Entity\Order o SET o.Payment = :card, o.payment_method = :method WHERE o.Payment = :legacy'
-        )->setParameters([
-            'card' => $CreditCardPayment,
-            'method' => Constants::UNIVAPAY_PAYMENT_METHOD,
-            'legacy' => $LegacyPayment,
-        ])->execute();
+        $statusCounts = [];
+        foreach ($firstOrders as $subscriptionId => $firstOrder) {
+            $statusId = $this->resolveLegacyParentStatus($subscriptionId, $fetchSubscriptionStatus);
+
+            $subscriptionOrder = OrderCopier::copy($firstOrder);
+            $subscriptionOrder->setOrderDate($firstOrder->getOrderDate());
+            $subscriptionOrder->setOrderStatus($entityManager->find(OrderStatus::class, $statusId));
+            $entityManager->persist($subscriptionOrder);
+            $entityManager->flush();
+            $orderNoProcessor->process($subscriptionOrder, new PurchaseContext());
+            $entityManager->flush();
+
+            $statusCounts[$statusId] = (isset($statusCounts[$statusId]) ? $statusCounts[$statusId] : 0) + 1;
+        }
 
         $paymentOptionRepository = $entityManager->getRepository(PaymentOption::class);
         foreach ($paymentOptionRepository->findBy(['Payment' => $LegacyPayment]) as $LegacyOption) {
@@ -116,18 +148,17 @@ class PluginManager extends AbstractPluginManager
         $entityManager->remove($LegacyPayment);
         $entityManager->flush();
 
-        $duplicateCharges = $entityManager->createQuery(
-            'SELECT o.univa_pay_charge_id AS charge_id, COUNT(o.id) AS orders FROM Eccube\Entity\Order o
-             WHERE o.univa_pay_subscription_id IS NOT NULL AND o.univa_pay_charge_id IS NOT NULL
-             GROUP BY o.univa_pay_charge_id HAVING COUNT(o.id) > 1'
-        )->getArrayResult();
-
         UnivaPayLogger::get()->info('[UnivaPay] legacy subscriptions migrated', [
             'parents_by_status' => $statusCounts,
-            'duplicate_charge_ids' => $duplicateCharges,
+            'duplicate_charge_ids' => array_filter($chargeIdCounts, function ($count) {
+                return $count > 1;
+            }),
         ]);
     }
 
+    /**
+     * @deprecated 1.5.0 migration only. Remove in the next release.
+     */
     private function resolveLegacyParentStatus($subscriptionId, callable $fetchSubscriptionStatus)
     {
         try {

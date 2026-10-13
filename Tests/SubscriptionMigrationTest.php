@@ -7,12 +7,16 @@ use Eccube\Entity\Master\OrderStatus;
 use Eccube\Entity\Order;
 use Eccube\Entity\Payment;
 use Eccube\Entity\PaymentOption;
+use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
 use Eccube\Tests\EccubeTestCase;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\PluginManager;
 use Plugin\UnivaPay\Service\Method\CreditCard;
 use Plugin\UnivaPay\Util\Constants;
 
+/**
+ * @deprecated 1.5.0 migration only. Remove in the next release.
+ */
 class SubscriptionMigrationTest extends EccubeTestCase
 {
     /** @var PluginManager */
@@ -61,16 +65,20 @@ class SubscriptionMigrationTest extends EccubeTestCase
 
         $this->migrate();
 
-        $this->assertParent($parentA, 'sub-a', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
-        $this->assertParent($parentB, 'sub-b', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_CANCEL);
-        $this->assertParent($parentC, 'sub-c', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
+        $this->assertSubscriptionOrder($parentA, 'sub-a', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
+        $this->assertSubscriptionOrder($parentB, 'sub-b', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_CANCEL);
+        $this->assertSubscriptionOrder($parentC, 'sub-c', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
 
+        $this->assertChild($parentA, 'sub-a', 'charge-a1', OrderStatus::PAID);
         $this->assertChild($childA2, 'sub-a', 'charge-a2', OrderStatus::PAID);
         $this->assertChild($childA3, 'sub-a', 'charge-a3', OrderStatus::CANCEL);
+        $this->assertChild($parentB, 'sub-b', 'charge-b1', OrderStatus::PAID);
+        $this->assertChild($parentC, 'sub-c', null, OrderStatus::PAID);
 
         $oneTime = $this->reload($oneTime);
         $this->assertSame('charge-one-time', $oneTime->getUnivapayChargeId());
         $this->assertNull($oneTime->getUnivapaySubscriptionId());
+        $this->assertNull($oneTime->getUnivapayParentSubscriptionId());
         $this->assertSame(OrderStatus::PAID, $oneTime->getOrderStatus()->getId());
 
         $paymentRepository = $this->entityManager->getRepository(Payment::class);
@@ -89,7 +97,8 @@ class SubscriptionMigrationTest extends EccubeTestCase
 
         $this->pluginManager->update([], $this->client->getContainer());
 
-        $this->assertParent($parent, 'sub-b', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
+        $this->assertSubscriptionOrder($parent, 'sub-b', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
+        $this->assertChild($parent, 'sub-b', 'charge-b1', OrderStatus::PAID);
         $this->assertChild($child, 'sub-b', 'charge-b2', OrderStatus::PAID);
     }
 
@@ -99,11 +108,12 @@ class SubscriptionMigrationTest extends EccubeTestCase
         $child = $this->createLegacyOrder('sub-a', 'charge-a2', OrderStatus::PAID);
 
         $this->migrate();
-        $this->pluginManager->migrateLegacySubscriptions($this->entityManager, function () {
+        $this->pluginManager->migrateLegacySubscriptions($this->entityManager, $this->orderNoProcessor(), function () {
             $this->fail('status must not be fetched once the legacy payment is gone');
         });
 
-        $this->assertParent($parent, 'sub-a', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
+        $this->assertSubscriptionOrder($parent, 'sub-a', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
+        $this->assertChild($parent, 'sub-a', 'charge-a1', OrderStatus::PAID);
         $this->assertChild($child, 'sub-a', 'charge-a2', OrderStatus::PAID);
     }
 
@@ -132,7 +142,7 @@ class SubscriptionMigrationTest extends EccubeTestCase
 
     private function migrate()
     {
-        $this->pluginManager->migrateLegacySubscriptions($this->entityManager, function ($subscriptionId) {
+        $this->pluginManager->migrateLegacySubscriptions($this->entityManager, $this->orderNoProcessor(), function ($subscriptionId) {
             if ($subscriptionId === 'sub-c') {
                 throw new \RuntimeException('API unavailable');
             }
@@ -179,21 +189,44 @@ class SubscriptionMigrationTest extends EccubeTestCase
         return $this->entityManager->find(Order::class, $order->getId());
     }
 
-    private function assertParent(Order $order, $subscriptionId, $statusId)
+    private function orderNoProcessor()
     {
-        $order = $this->reload($order);
-        $this->assertSame($subscriptionId, $order->getUnivapaySubscriptionId());
-        $this->assertNull($order->getUnivapayChargeId());
-        $this->assertSame($statusId, $order->getOrderStatus()->getId());
-        $this->assertLegacyPaymentReplaced($order);
+        return new OrderNoProcessor($this->eccubeConfig, $this->entityManager->getRepository(Order::class));
+    }
+
+    /**
+     * Exactly one parent order without a charge id exists, copied from the 1.5.0 first order.
+     */
+    private function assertSubscriptionOrder(Order $firstOrder, $subscriptionId, $statusId)
+    {
+        $firstOrder = $this->reload($firstOrder);
+        $orders = $this->entityManager->getRepository(Order::class)->findBy(['univa_pay_parent_subscription_id' => $subscriptionId]);
+        $parents = array_values(array_filter($orders, function (Order $order) {
+            return $order->isUnivapaySubscriptionParent();
+        }));
+        $this->assertCount(1, $parents);
+
+        $parent = $parents[0];
+        $this->assertNotSame($firstOrder->getId(), $parent->getId());
+        $this->assertNull($parent->getUnivapayChargeId());
+        $this->assertNull($parent->getUnivapaySubscriptionId());
+        $this->assertSame($statusId, $parent->getOrderStatus()->getId());
+        $this->assertNotNull($parent->getOrderNo());
+        $this->assertSame($firstOrder->getEmail(), $parent->getEmail());
+        $this->assertSame($firstOrder->getCustomer()->getId(), $parent->getCustomer()->getId());
+        $this->assertCount(count($firstOrder->getProductOrderItems()), $parent->getProductOrderItems());
+        $this->assertCount(count($firstOrder->getShippings()), $parent->getShippings());
+        $this->assertLegacyPaymentReplaced($parent);
     }
 
     private function assertChild(Order $order, $subscriptionId, $chargeId, $statusId)
     {
         $order = $this->reload($order);
+        $this->assertSame($subscriptionId, $order->getUnivapayParentSubscriptionId());
         $this->assertSame($subscriptionId, $order->getUnivapaySubscriptionId());
         $this->assertSame($chargeId, $order->getUnivapayChargeId());
         $this->assertSame($statusId, $order->getOrderStatus()->getId());
+        $this->assertFalse($order->isUnivapaySubscriptionParent());
         $this->assertLegacyPaymentReplaced($order);
     }
 

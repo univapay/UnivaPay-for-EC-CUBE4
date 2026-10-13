@@ -39,7 +39,7 @@ class MailEventListener implements EventSubscriberInterface
         /** @var Order $order */
         $order = $event->getArgument('Order');
 
-        if ($order->getUnivapaySubscriptionId() && !$order->getUnivapayChargeId()) {
+        if ($order->isUnivapaySubscriptionParent()) {
             $msg = $event->getArgument('message');
 
             $subscriptionMailTemplate = $this->mailTemplateRepository->findOneBy([

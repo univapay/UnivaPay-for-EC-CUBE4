@@ -17,7 +17,7 @@ namespace Plugin\UnivaPay\Repository;
             if (isset($searchData['multi']) && StringUtil::isNotBlank($searchData['multi'])) {
                 // 注文番号検索の場合を除外
                 if (!preg_match('/^\d{0,10}$/', $searchData['multi'])) {
-                    $qb->orWhere('o.univa_pay_charge_id like :likemulti OR o.univa_pay_subscription_id like :likemulti');
+                    $qb->orWhere('o.univa_pay_charge_id like :likemulti OR o.univa_pay_parent_subscription_id like :likemulti');
                 }
             }
         }
