@@ -2,5 +2,16 @@ services:
     Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus:
         class: Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus
 
+monolog:
+    channels: ['univapay']
+    handlers:
+        univapay:
+            type: rotating_file
+            channels: ['univapay']
+            level: info
+            max_files: 60
+            path: '%kernel.logs_dir%/%kernel.environment%/univapay.log'
+            formatter: eccube.log.formatter.line
+
 imports:
     - resource: 'order_state_machine.php'
