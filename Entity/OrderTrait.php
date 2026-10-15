@@ -22,9 +22,8 @@ trait OrderTrait
     private $univa_pay_charge_id;
 
     /**
-     * 検索用に定期課金IDを保持するカラム
-     *
-     * @deprecated Holds 1.5.0 data only. New orders use univa_pay_parent_subscription_id. Remove in the next release.
+     * Legacy subscription id. Holds 1.5.0 data only; new orders use univa_pay_parent_subscription_id. Keep it mapped: the 1.5.0 migration reads it,
+     * and EC-CUBE's schema update would drop an unmapped column.
      *
      * dtb_order.univa_pay_subscription_id
      *
@@ -65,8 +64,6 @@ trait OrderTrait
 
     /**
      * @return string
-     *
-     * @deprecated Remove with univa_pay_subscription_id in the next release.
      */
     public function getUnivapaySubscriptionId()
     {
@@ -77,8 +74,6 @@ trait OrderTrait
      * @param string $univa_pay_subscription_id
      *
      * @return $this
-     *
-     * @deprecated Remove with univa_pay_subscription_id in the next release.
      */
     public function setUnivapaySubscriptionId($univa_pay_subscription_id)
     {

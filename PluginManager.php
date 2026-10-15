@@ -4,15 +4,16 @@ namespace Plugin\UnivaPay;
 
 require_once __DIR__.'/Resource/vendor/autoload.php';
 
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Eccube\Common\EccubeConfig;
 use Eccube\Entity\MailTemplate;
 use Eccube\Entity\Master\CustomerOrderStatus;
+use Eccube\Entity\Master\OrderItemType;
 use Eccube\Entity\Master\OrderStatus;
 use Eccube\Entity\Master\OrderStatusColor;
 use Eccube\Entity\Order;
 use Eccube\Entity\Payment;
-use Eccube\Entity\PaymentOption;
 use Eccube\Plugin\AbstractPluginManager;
 use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
 use Eccube\Service\PurchaseFlow\PurchaseContext;
@@ -21,7 +22,6 @@ use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use Plugin\UnivaPay\Service\Method\CreditCard;
 use Plugin\UnivaPay\Util\Constants;
-use Plugin\UnivaPay\Util\OrderCopier;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -31,12 +31,27 @@ class PluginManager extends AbstractPluginManager
 {
     /**
      * Only installs up to 1.5.0 have a dtb_payment row with this (now deleted) class.
-     *
-     * @deprecated 1.5.0 migration only. Remove in the next release.
      */
     const LEGACY_SUBSCRIPTION_METHOD_CLASS = 'Plugin\UnivaPay\Service\Method\Subscription';
 
     public function enable(array $meta, ContainerInterface $container)
+    {
+        $this->seedMasterData($container);
+    }
+
+    /**
+     * An admin-upload update runs in a request that still has the 1.5.0 plugin classes loaded: EC-CUBE's schema
+     * update sees no change and plugin entities, traits and constants are the old ones. So the schema changes go
+     * through a Doctrine migration and the order data through DBAL; only core entities are used via the ORM.
+     */
+    public function update(array $meta, ContainerInterface $container)
+    {
+        $entityManager = $container->get('doctrine')->getManager();
+        $this->migration($entityManager->getConnection(), $meta['code']);
+        $this->migrateFrom150($container);
+    }
+
+    private function seedMasterData(ContainerInterface $container)
     {
         $this->createTokenPayment($container);
         $this->createConfig($container);
@@ -47,20 +62,19 @@ class PluginManager extends AbstractPluginManager
         $this->addSubscriptionMailTemplate($container);
     }
 
-    public function update(array $meta, ContainerInterface $container)
+    public function migrateFrom150(ContainerInterface $container)
     {
-        // when migrating from 1.5.0. Deprecated: remove this body with migrateLegacySubscriptions() in the next release.
         $entityManager = $container->get('doctrine')->getManager();
-        if (!$entityManager->getRepository(Payment::class)->findOneBy(['method_class' => self::LEGACY_SUBSCRIPTION_METHOD_CLASS])) {
+        $connection = $entityManager->getConnection();
+        if ($connection->fetchColumn('SELECT id FROM dtb_payment WHERE method_class = ?', [self::LEGACY_SUBSCRIPTION_METHOD_CLASS]) === false) {
             return;
         }
 
-        $this->enable($meta, $container);
-
+        $this->seedMasterData($container);
         $orderNoProcessor = new OrderNoProcessor($container->get(EccubeConfig::class), $entityManager->getRepository(Order::class));
 
-        $config = $entityManager->find(Config::class, 1);
-        if (!$config || !$config->getAppId() || !$config->getAppSecret()) {
+        $config = $connection->fetchAssoc('SELECT app_id, app_secret FROM plg_univa_pay_config WHERE id = 1');
+        if (!$config || !$config['app_id'] || !$config['app_secret']) {
             UnivaPayLogger::get()->warning('[UnivaPay] API credentials not set, legacy subscriptions migrated as active');
             $this->migrateLegacySubscriptions($entityManager, $orderNoProcessor, function () {
                 return null;
@@ -70,9 +84,9 @@ class PluginManager extends AbstractPluginManager
         }
 
         $sdk = null;
-        $this->migrateLegacySubscriptions($entityManager, $orderNoProcessor, function ($subscriptionId) use ($config, &$sdk) {
+        $this->migrateLegacySubscriptions($entityManager, $orderNoProcessor, function ($subscriptionId) use ($entityManager, &$sdk) {
             if (!$sdk) {
-                $sdk = new SDK($config);
+                $sdk = new SDK($entityManager->find(Config::class, 1));
             }
 
             return $sdk->getSubscription($subscriptionId)->getStatus();
@@ -82,71 +96,72 @@ class PluginManager extends AbstractPluginManager
     /**
      * 1.5.0 used the first order as the parent, so this creates a new parent order without a charge id per subscription
      * and copies univa_pay_parent_subscription_id to every existing order. Existing charge ids and statuses are not changed.
-     *
-     * @deprecated 1.5.0 migration only. Remove in the next release.
      */
     public function migrateLegacySubscriptions(EntityManagerInterface $entityManager, OrderNoProcessor $orderNoProcessor, callable $fetchSubscriptionStatus)
     {
-        $paymentRepository = $entityManager->getRepository(Payment::class);
-        $LegacyPayment = $paymentRepository->findOneBy(['method_class' => self::LEGACY_SUBSCRIPTION_METHOD_CLASS]);
-        if (!$LegacyPayment) {
+        $connection = $entityManager->getConnection();
+        $legacyPaymentId = $connection->fetchColumn('SELECT id FROM dtb_payment WHERE method_class = ?', [self::LEGACY_SUBSCRIPTION_METHOD_CLASS]);
+        if ($legacyPaymentId === false) {
             return;
         }
-        $CreditCardPayment = $paymentRepository->findOneBy(['method_class' => CreditCard::class]);
+        $creditCardPaymentId = $connection->fetchColumn('SELECT id FROM dtb_payment WHERE method_class = ?', [CreditCard::class]);
 
-        // ponytail: loads every legacy order into one unit of work; batch with flush/clear if shops have too many for memory
-        $legacyOrders = $entityManager->getRepository(Order::class)->findBy(['Payment' => $LegacyPayment], ['id' => 'ASC']);
-        $firstOrders = [];
+        $firstOrderIds = [];
         $chargeIdCounts = [];
+        $legacyOrders = $connection->fetchAll(
+            'SELECT id, univa_pay_subscription_id, univa_pay_charge_id FROM dtb_order WHERE payment_id = ? ORDER BY id',
+            [$legacyPaymentId]
+        );
         foreach ($legacyOrders as $order) {
-            $order->setPayment($CreditCardPayment);
-            $order->setPaymentMethod(Constants::UNIVAPAY_PAYMENT_METHOD);
-
-            $subscriptionId = $order->getUnivapaySubscriptionId();
+            $subscriptionId = $order['univa_pay_subscription_id'];
             if ($subscriptionId === null) {
                 continue;
             }
-            // univa_pay_subscription_id is left as is so 1.5.0 data survives until the column is dropped.
-            $order->setUnivapayParentSubscriptionId($subscriptionId);
-            if (!isset($firstOrders[$subscriptionId])) {
-                $firstOrders[$subscriptionId] = $order;
+            if (!isset($firstOrderIds[$subscriptionId])) {
+                $firstOrderIds[$subscriptionId] = $order['id'];
             }
-            if ($order->getUnivapayChargeId() !== null) {
-                $chargeId = $order->getUnivapayChargeId();
+            if ($order['univa_pay_charge_id'] !== null) {
+                $chargeId = $order['univa_pay_charge_id'];
                 $chargeIdCounts[$chargeId] = (isset($chargeIdCounts[$chargeId]) ? $chargeIdCounts[$chargeId] : 0) + 1;
             }
         }
 
-        $statusCounts = [];
-        foreach ($firstOrders as $subscriptionId => $firstOrder) {
-            $statusId = $this->resolveLegacyParentStatus($subscriptionId, $fetchSubscriptionStatus);
+        // univa_pay_subscription_id is left as is so the original 1.5.0 data survives.
+        $connection->executeUpdate(
+            'UPDATE dtb_order SET univa_pay_parent_subscription_id = univa_pay_subscription_id WHERE payment_id = ? AND univa_pay_subscription_id IS NOT NULL',
+            [$legacyPaymentId]
+        );
+        $connection->executeUpdate(
+            'UPDATE dtb_order SET payment_id = ?, payment_method = ? WHERE payment_id = ?',
+            [$creditCardPaymentId, Constants::UNIVAPAY_PAYMENT_METHOD, $legacyPaymentId]
+        );
 
-            $subscriptionOrder = OrderCopier::copy($firstOrder);
-            $subscriptionOrder->setOrderDate($firstOrder->getOrderDate());
-            $subscriptionOrder->setOrderStatus($entityManager->find(OrderStatus::class, $statusId));
-            $entityManager->persist($subscriptionOrder);
-            $entityManager->flush();
-            $orderNoProcessor->process($subscriptionOrder, new PurchaseContext());
+        $statusCounts = [];
+        foreach ($firstOrderIds as $subscriptionId => $firstOrderId) {
+            $statusId = $this->resolveLegacyParentStatus($subscriptionId, $fetchSubscriptionStatus);
+            $parentId = $this->copyOrderAsSubscriptionParent($connection, $firstOrderId, $statusId);
+            $orderNoProcessor->process($entityManager->find(Order::class, $parentId), new PurchaseContext());
             $entityManager->flush();
 
             $statusCounts[$statusId] = (isset($statusCounts[$statusId]) ? $statusCounts[$statusId] : 0) + 1;
         }
 
-        $paymentOptionRepository = $entityManager->getRepository(PaymentOption::class);
-        foreach ($paymentOptionRepository->findBy(['Payment' => $LegacyPayment]) as $LegacyOption) {
-            $Delivery = $LegacyOption->getDelivery();
-            if (!$paymentOptionRepository->findOneBy(['Delivery' => $Delivery, 'Payment' => $CreditCardPayment])) {
-                $Option = new PaymentOption();
-                $Option->setDeliveryId($Delivery->getId());
-                $Option->setDelivery($Delivery);
-                $Option->setPaymentId($CreditCardPayment->getId());
-                $Option->setPayment($CreditCardPayment);
-                $entityManager->persist($Option);
+        $deliveryIds = $connection->fetchAll('SELECT delivery_id FROM dtb_payment_option WHERE payment_id = ?', [$legacyPaymentId]);
+        foreach ($deliveryIds as $row) {
+            $exists = $connection->fetchColumn(
+                'SELECT 1 FROM dtb_payment_option WHERE delivery_id = ? AND payment_id = ?',
+                [$row['delivery_id'], $creditCardPaymentId]
+            );
+            if ($exists === false) {
+                $connection->insert('dtb_payment_option', [
+                    'delivery_id' => $row['delivery_id'],
+                    'payment_id' => $creditCardPaymentId,
+                    'discriminator_type' => 'paymentoption',
+                ]);
             }
-            $entityManager->remove($LegacyOption);
         }
-        $entityManager->remove($LegacyPayment);
-        $entityManager->flush();
+        $connection->executeUpdate('DELETE FROM dtb_payment_option WHERE payment_id = ?', [$legacyPaymentId]);
+        $connection->executeUpdate('DELETE FROM dtb_payment WHERE id = ?', [$legacyPaymentId]);
 
         UnivaPayLogger::get()->info('[UnivaPay] legacy subscriptions migrated', [
             'parents_by_status' => $statusCounts,
@@ -157,8 +172,62 @@ class PluginManager extends AbstractPluginManager
     }
 
     /**
-     * @deprecated 1.5.0 migration only. Remove in the next release.
+     * Same result as OrderCopier, at row level: product, fee and tax items and the shippings are copied, discount and
+     * point items are not, and shipping dates and tracking numbers are cleared. Returns the new order id.
      */
+    private function copyOrderAsSubscriptionParent(Connection $connection, $orderId, $statusId)
+    {
+        $now = (new \DateTime())->format('Y-m-d H:i:s');
+
+        $order = $connection->fetchAssoc('SELECT * FROM dtb_order WHERE id = ?', [$orderId]);
+        unset($order['id']);
+        $connection->insert('dtb_order', array_merge($order, [
+            'pre_order_id' => null,
+            'order_no' => null,
+            'univa_pay_charge_id' => null,
+            'univa_pay_subscription_id' => null,
+            'order_status_id' => $statusId,
+            'payment_date' => null,
+            'add_point' => 0,
+            'use_point' => 0,
+            'create_date' => $now,
+            'update_date' => $now,
+        ]));
+        // PostgreSQL needs the sequence name; MySQL ignores it.
+        $parentId = $connection->lastInsertId('dtb_order_id_seq');
+
+        $shippingIds = [];
+        foreach ($connection->fetchAll('SELECT * FROM dtb_shipping WHERE order_id = ? ORDER BY id', [$orderId]) as $shipping) {
+            $oldShippingId = $shipping['id'];
+            unset($shipping['id']);
+            $connection->insert('dtb_shipping', array_merge($shipping, [
+                'order_id' => $parentId,
+                'delivery_date' => null,
+                'delivery_time' => null,
+                'time_id' => null,
+                'shipping_date' => null,
+                'tracking_number' => null,
+                'mail_send_date' => null,
+                'create_date' => $now,
+                'update_date' => $now,
+            ]));
+            $shippingIds[$oldShippingId] = $connection->lastInsertId('dtb_shipping_id_seq');
+        }
+
+        $items = $connection->fetchAll(
+            'SELECT * FROM dtb_order_item WHERE order_id = ? AND order_item_type_id NOT IN (?, ?) ORDER BY id',
+            [$orderId, OrderItemType::DISCOUNT, OrderItemType::POINT]
+        );
+        foreach ($items as $item) {
+            unset($item['id']);
+            $item['order_id'] = $parentId;
+            $item['shipping_id'] = isset($shippingIds[$item['shipping_id']]) ? $shippingIds[$item['shipping_id']] : null;
+            $connection->insert('dtb_order_item', $item);
+        }
+
+        return $parentId;
+    }
+
     private function resolveLegacyParentStatus($subscriptionId, callable $fetchSubscriptionStatus)
     {
         try {
@@ -310,16 +379,17 @@ class PluginManager extends AbstractPluginManager
 
     private function createSubscriptionPeriod(ContainerInterface $container)
     {
+        // Literal ids: update() runs this with the 1.5.0 SubscriptionPeriod class loaded, which lacks NON_SUBSCRIPTION.
         $statuses = [
-            SubscriptionPeriod::NON_SUBSCRIPTION => '非定期',
-            SubscriptionPeriod::DAILY => '毎日',
-            SubscriptionPeriod::WEEKLY => '毎週',
-            SubscriptionPeriod::BIWEEKLY => '隔週',
-            SubscriptionPeriod::MONTHLY => '毎月',
-            SubscriptionPeriod::BIMONTHLY => '隔月',
-            SubscriptionPeriod::QUARTERLY => '3ヶ月',
-            SubscriptionPeriod::SEMIANNUALLY => '6ヶ月',
-            SubscriptionPeriod::ANNUALLY => '毎年',
+            0 => '非定期',
+            1 => '毎日',
+            2 => '毎週',
+            3 => '隔週',
+            4 => '毎月',
+            5 => '隔月',
+            6 => '3ヶ月',
+            7 => '6ヶ月',
+            8 => '毎年',
         ];
         $this->createMasterData($container, $statuses, SubscriptionPeriod::class);
     }

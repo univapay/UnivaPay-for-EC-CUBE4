@@ -14,9 +14,6 @@ use Plugin\UnivaPay\PluginManager;
 use Plugin\UnivaPay\Service\Method\CreditCard;
 use Plugin\UnivaPay\Util\Constants;
 
-/**
- * @deprecated 1.5.0 migration only. Remove in the next release.
- */
 class SubscriptionMigrationTest extends EccubeTestCase
 {
     /** @var PluginManager */
@@ -90,12 +87,12 @@ class SubscriptionMigrationTest extends EccubeTestCase
         ]));
     }
 
-    public function testUpdateWithoutCredentialsMigratesAsActive()
+    public function testMigrateFrom150WithoutCredentialsMigratesAsActive()
     {
         $parent = $this->createLegacyOrder('sub-b', 'charge-b1', OrderStatus::PAID);
         $child = $this->createLegacyOrder('sub-b', 'charge-b2', OrderStatus::PAID);
 
-        $this->pluginManager->update([], $this->client->getContainer());
+        $this->pluginManager->migrateFrom150($this->client->getContainer());
 
         $this->assertSubscriptionOrder($parent, 'sub-b', UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
         $this->assertChild($parent, 'sub-b', 'charge-b1', OrderStatus::PAID);
@@ -117,7 +114,18 @@ class SubscriptionMigrationTest extends EccubeTestCase
         $this->assertChild($child, 'sub-a', 'charge-a2', OrderStatus::PAID);
     }
 
-    public function testUpdateSkipsInstallsNotFrom150()
+    public function testEnableDoesNotMigrate()
+    {
+        $order = $this->createLegacyOrder('sub-a', 'charge-a1', OrderStatus::PAID);
+
+        $this->pluginManager->enable([], $this->client->getContainer());
+
+        $order = $this->reload($order);
+        $this->assertNull($order->getUnivapayParentSubscriptionId());
+        $this->assertSame(PluginManager::LEGACY_SUBSCRIPTION_METHOD_CLASS, $order->getPayment()->getMethodClass());
+    }
+
+    public function testMigrateFrom150SkipsInstallsNotFrom150()
     {
         $this->entityManager->remove($this->legacyPayment);
         foreach ($this->entityManager->getRepository(PaymentOption::class)->findBy(['Payment' => $this->legacyPayment]) as $option) {
@@ -125,19 +133,14 @@ class SubscriptionMigrationTest extends EccubeTestCase
         }
         $this->entityManager->flush();
         $order = $this->createOneTimeOrder('charge-x');
-        $activeStatus = $this->entityManager->find(OrderStatus::class, UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
-        $activeStatus->setName('renamed by merchant');
-        $this->entityManager->flush();
+        $orderCount = count($this->entityManager->getRepository(Order::class)->findAll());
 
-        $this->pluginManager->update([], $this->client->getContainer());
+        $this->pluginManager->migrateFrom150($this->client->getContainer());
 
         $order = $this->reload($order);
         $this->assertSame('charge-x', $order->getUnivapayChargeId());
         $this->assertSame(OrderStatus::PAID, $order->getOrderStatus()->getId());
-        $this->assertSame(
-            'renamed by merchant',
-            $this->entityManager->find(OrderStatus::class, UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE)->getName()
-        );
+        $this->assertCount($orderCount, $this->entityManager->getRepository(Order::class)->findAll());
     }
 
     private function migrate()
