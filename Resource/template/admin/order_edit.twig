@@ -1,4 +1,4 @@
-{% if Order.payment_method == 'UnivaPay' %}
+{% if UnivaPayOrder|default(false) %}
     <script>
         $(function () {
             // ページ最下部に移動

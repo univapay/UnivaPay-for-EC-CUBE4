@@ -3,6 +3,7 @@
 namespace Plugin\UnivaPay;
 
 use Eccube\Event\TemplateEvent;
+use Plugin\UnivaPay\Util\PaymentMethodChecker;
 use Plugin\UnivaPay\Util\SubscriptionCartChecker;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -43,6 +44,8 @@ class UnivaPayEvent implements EventSubscriberInterface
 
     public function onAdminOrderEditTwig(TemplateEvent $event)
     {
+        $Order = $event->hasParameter('Order') ? $event->getParameter('Order') : null;
+        $event->setParameter('UnivaPayOrder', PaymentMethodChecker::isUnivaPay($Order));
         $event->addSnippet('@UnivaPay/admin/order_edit.twig');
     }
 
@@ -58,6 +61,8 @@ class UnivaPayEvent implements EventSubscriberInterface
 
     public function onShoppingConfirmTwig(TemplateEvent $event)
     {
+        $Order = $event->hasParameter('Order') ? $event->getParameter('Order') : null;
+        $event->setParameter('UnivaPayOrder', PaymentMethodChecker::isUnivaPay($Order));
         $event->addSnippet('@UnivaPay/shopping_confirm.twig');
     }
 

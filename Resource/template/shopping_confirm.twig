@@ -1,4 +1,4 @@
-{% if Order.payment_method == 'UnivaPay' %}
+{% if UnivaPayOrder|default(false) %}
     {% set isSubscription = false %}
     {% for item in Order.OrderItems %}
         {% if item.ProductClass and item.ProductClass.SubscriptionPeriod and item.ProductClass.SubscriptionPeriod.id > 0 %}

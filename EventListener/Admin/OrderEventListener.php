@@ -5,7 +5,7 @@ namespace Plugin\UnivaPay\EventListener\Admin;
 use Eccube\Event\EccubeEvents;
 use Eccube\Event\EventArgs;
 use Plugin\UnivaPay\Repository\ConfigRepository;
-use Plugin\UnivaPay\Util\Constants;
+use Plugin\UnivaPay\Util\PaymentMethodChecker;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\UnivaPayApiException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -39,7 +39,7 @@ class OrderEventListener implements EventSubscriberInterface
     public function onOrderEditIndex(EventArgs $event)
     {
         $order = $event->getArgument('TargetOrder');
-        if (!$order || $order->getPaymentMethod() !== Constants::UNIVAPAY_PAYMENT_METHOD) {
+        if (!PaymentMethodChecker::isUnivaPay($order)) {
             return;
         }
 

@@ -10,6 +10,7 @@ use Eccube\Repository\MailHistoryRepository;
 use Eccube\Repository\MailTemplateRepository;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\Constants;
+use Plugin\UnivaPay\Util\PaymentMethodChecker;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\UnivaPayApiException;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
@@ -72,7 +73,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
 
     private function isUnivapayPayment(Order $order): bool
     {
-        return $order->getPaymentMethod() === Constants::UNIVAPAY_PAYMENT_METHOD;
+        return PaymentMethodChecker::isUnivaPay($order);
     }
 
     private function guard(callable $fn)
