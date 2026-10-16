@@ -5,9 +5,9 @@
             $('#univapay-info').appendTo($('#form1 > div.c-contentsArea__cols > div > div'));
         });
     </script>
-    {% if Order.univa_pay_charge_id and Order.univapayCharge is not null %}
+    {% if Order.univa_pay_charge_id and Order.univapayCharge is defined %}
         {% include '@UnivaPay/admin/order/charge.twig' %}
-    {% elseif Order.univa_pay_parent_subscription_id and Order.univapaySubscriptionStatus is not null %}
+    {% elseif Order.univa_pay_parent_subscription_id and Order.univapaySubscriptionStatus is defined %}
         {% include '@UnivaPay/admin/order/subscription.twig' %}
     {% endif %}
 {% endif %}

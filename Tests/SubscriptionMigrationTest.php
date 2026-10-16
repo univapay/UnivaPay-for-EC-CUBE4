@@ -13,6 +13,7 @@ use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\PluginManager;
 use Plugin\UnivaPay\Service\Method\CreditCard;
 use Plugin\UnivaPay\Util\Constants;
+use Plugin\UnivaPay\Util\LegacySubscriptionMigration;
 
 class SubscriptionMigrationTest extends EccubeTestCase
 {
@@ -34,7 +35,7 @@ class SubscriptionMigrationTest extends EccubeTestCase
 
         $this->legacyPayment = new Payment();
         $this->legacyPayment->setMethod('UnivaPay(Subscription)')
-            ->setMethodClass(PluginManager::LEGACY_SUBSCRIPTION_METHOD_CLASS)
+            ->setMethodClass(LegacySubscriptionMigration::PAYMENT_METHOD_CLASS)
             ->setCharge(0)
             ->setSortNo(999)
             ->setVisible(true);
@@ -79,7 +80,7 @@ class SubscriptionMigrationTest extends EccubeTestCase
         $this->assertSame(OrderStatus::PAID, $oneTime->getOrderStatus()->getId());
 
         $paymentRepository = $this->entityManager->getRepository(Payment::class);
-        $this->assertNull($paymentRepository->findOneBy(['method_class' => PluginManager::LEGACY_SUBSCRIPTION_METHOD_CLASS]));
+        $this->assertNull($paymentRepository->findOneBy(['method_class' => LegacySubscriptionMigration::PAYMENT_METHOD_CLASS]));
         $creditCard = $paymentRepository->findOneBy(['method_class' => CreditCard::class]);
         $this->assertNotNull($this->entityManager->getRepository(PaymentOption::class)->findOneBy([
             'Delivery' => $this->delivery,
@@ -105,7 +106,7 @@ class SubscriptionMigrationTest extends EccubeTestCase
         $child = $this->createLegacyOrder('sub-a', 'charge-a2', OrderStatus::PAID);
 
         $this->migrate();
-        $this->pluginManager->migrateLegacySubscriptions($this->entityManager, $this->orderNoProcessor(), function () {
+        LegacySubscriptionMigration::run($this->entityManager, $this->orderNoProcessor(), function () {
             $this->fail('status must not be fetched once the legacy payment is gone');
         });
 
@@ -122,7 +123,7 @@ class SubscriptionMigrationTest extends EccubeTestCase
 
         $order = $this->reload($order);
         $this->assertNull($order->getUnivapayParentSubscriptionId());
-        $this->assertSame(PluginManager::LEGACY_SUBSCRIPTION_METHOD_CLASS, $order->getPayment()->getMethodClass());
+        $this->assertSame(LegacySubscriptionMigration::PAYMENT_METHOD_CLASS, $order->getPayment()->getMethodClass());
     }
 
     public function testMigrateFrom150SkipsInstallsNotFrom150()
@@ -145,7 +146,7 @@ class SubscriptionMigrationTest extends EccubeTestCase
 
     private function migrate()
     {
-        $this->pluginManager->migrateLegacySubscriptions($this->entityManager, $this->orderNoProcessor(), function ($subscriptionId) {
+        LegacySubscriptionMigration::run($this->entityManager, $this->orderNoProcessor(), function ($subscriptionId) {
             if ($subscriptionId === 'sub-c') {
                 throw new \RuntimeException('API unavailable');
             }

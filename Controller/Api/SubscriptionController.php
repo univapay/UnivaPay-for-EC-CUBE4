@@ -25,7 +25,6 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use Univapay\Enums\WebhookEvent;
 
 class SubscriptionController extends AbstractController
 {
@@ -94,12 +93,12 @@ class SubscriptionController extends AbstractController
         $data = json_decode($request->getContent());
         $util = new SDK($config);
 
-        $charge = $util->getChargeBySubscriptionId($data->data->id);
+        $charge = $util->getLatestChargeBySubscriptionId($data->data->id);
         if (is_null($charge)) {
             return new Response('Charge not found', 404);
         }
 
-        if ($this->Order->findOneBy(['univa_pay_charge_id' => $charge->id])) {
+        if ($this->Order->findOneBy(['univa_pay_charge_id' => $charge->getId()])) {
             return new Response('Order already created', 200);
         }
 
@@ -112,15 +111,15 @@ class SubscriptionController extends AbstractController
             return new Response(trans('univa_pay.error.webhook.subscription.not_found'), 404);
         }
 
-        switch (WebhookEvent::fromValue($data->event)) {
-            case WebhookEvent::SUBSCRIPTION_PAYMENT():
-                $order = $this->createOrder($subscriptionOrder, $data, $charge, WebhookEvent::SUBSCRIPTION_PAYMENT());
-                $charge->patch(['orderNo' => $order->getId()]);
+        switch ($data->event) {
+            case 'subscription_payment':
+                $order = $this->createOrder($subscriptionOrder, $data, $charge, 'subscription_payment');
+                $util->updateChargeMetaData($order, $charge);
 
                 return new Response('successfully accepted', 201);
-            case WebhookEvent::SUBSCRIPTION_FAILURE():
-                $order = $this->createOrder($subscriptionOrder, $data, $charge, WebhookEvent::SUBSCRIPTION_FAILURE());
-                $charge->patch(['orderNo' => $order->getId()]);
+            case 'subscription_failure':
+                $order = $this->createOrder($subscriptionOrder, $data, $charge, 'subscription_failure');
+                $util->updateChargeMetaData($order, $charge);
 
                 return new Response('successfully accepted', 201);
             default:
@@ -177,9 +176,9 @@ class SubscriptionController extends AbstractController
         $this->orderNoProcessor->process($newOrder, $purchaseContext);
         $this->entityManager->flush();
         // 定期課金に失敗した場合はキャンセル済み注文に変更
-        $OrderStatus = $this->orderStatusRepository->find($event === WebhookEvent::SUBSCRIPTION_PAYMENT() ? OrderStatus::PAID : OrderStatus::CANCEL);
+        $OrderStatus = $this->orderStatusRepository->find($event === 'subscription_payment' ? OrderStatus::PAID : OrderStatus::CANCEL);
         $newOrder->setOrderStatus($OrderStatus);
-        if ($event === WebhookEvent::SUBSCRIPTION_PAYMENT()) {
+        if ($event === 'subscription_payment') {
             $this->mailService->sendOrderMail($newOrder);
         }
         $this->entityManager->flush();

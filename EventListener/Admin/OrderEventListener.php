@@ -102,7 +102,7 @@ class OrderEventListener implements EventSubscriberInterface
                 $order->univapaySubscriptionStatus = trans('univa_pay.admin.subscription.status.completed');
                 break;
             default:
-                $order->univapaySubscriptionStatus = '';
+                $order->univapaySubscriptionStatus = null;
         }
 
         return $order;

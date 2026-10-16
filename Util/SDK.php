@@ -10,6 +10,8 @@ use UnivaPay\Authentication\BearerAuthCredentialsBuilder;
 use UnivaPay\Logging\LoggingConfigurationBuilder;
 use UnivaPay\Logging\RequestLoggingConfigurationBuilder;
 use UnivaPay\Logging\ResponseLoggingConfigurationBuilder;
+use UnivaPay\Models\Builders\ChargeUpdateRequestBuilder;
+use UnivaPay\Models\Builders\GenericMetadataBuilder;
 use UnivaPay\Models\Charge;
 use UnivaPay\Models\ChargeCaptureRequest;
 use UnivaPay\Models\RefundCreateRequest;
@@ -168,13 +170,29 @@ class SDK
         });
     }
 
-    public function getChargeBySubscriptionId(string $subscriptionId)
+    public function updateChargeMetaData($order, Charge $charge)
     {
-        $result = $this->execute('get subscription by subscription id', $subscriptionId, function () use ($subscriptionId) {
-            return $this->client->getSubscriptionsApi()->getSubscription($this->client->getCurrentStoreId(), $subscriptionId);
+        $this->execute('upate charge', $charge->getId(), function () use ($order, $charge) {
+            return $this->client->getChargesApi()->updateCharge(
+                $this->client->getCurrentStoreId(),
+                $charge->getId(),
+                null,
+                ChargeUpdateRequestBuilder::init()
+                    ->metadata(
+                        GenericMetadataBuilder::init()
+                            ->additionalProperty('orderNo', $order->getId())
+                            ->build()
+                    )
+                    ->build()
+            );
         });
+    }
 
-        return current($result);
+    public function getLatestChargeBySubscriptionId(string $subscriptionId)
+    {
+        return $this->execute('get subscription by subscription id', $subscriptionId, function () use ($subscriptionId) {
+            return $this->client->getSubscriptionsApi()->getSubscriptionLatestCharge($this->client->getCurrentStoreId(), $subscriptionId);
+        });
     }
 
     public function getSubscriptionByChargeId(string $chargeId)
