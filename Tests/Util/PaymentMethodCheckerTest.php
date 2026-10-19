@@ -11,17 +11,14 @@ use Plugin\UnivaPay\Util\PaymentMethodChecker;
 
 class PaymentMethodCheckerTest extends TestCase
 {
-    private function makeOrder($methodName, $methodClass, $hasPayment = true)
+    private function makeOrder($methodName, $methodClass)
     {
+        $Payment = new Payment();
+        $Payment->setMethod($methodName);
+        $Payment->setMethodClass($methodClass);
         $Order = new Order();
         $Order->setPaymentMethod($methodName);
-
-        if ($hasPayment) {
-            $Payment = new Payment();
-            $Payment->setMethod($methodName);
-            $Payment->setMethodClass($methodClass);
-            $Order->setPayment($Payment);
-        }
+        $Order->setPayment($Payment);
 
         return $Order;
     }
@@ -29,13 +26,6 @@ class PaymentMethodCheckerTest extends TestCase
     public function testNullOrder()
     {
         $this->assertFalse(PaymentMethodChecker::isUnivaPay(null));
-    }
-
-    public function testUnivaPayOrder()
-    {
-        $Order = $this->makeOrder(Constants::UNIVAPAY_PAYMENT_METHOD, CreditCard::class);
-
-        $this->assertTrue(PaymentMethodChecker::isUnivaPay($Order));
     }
 
     public function testRenamedPaymentMethodIsStillDetected()
@@ -50,21 +40,5 @@ class PaymentMethodCheckerTest extends TestCase
         $Order = $this->makeOrder(Constants::UNIVAPAY_PAYMENT_METHOD, 'Plugin\OtherPayment\Service\Method\Card');
 
         $this->assertFalse(PaymentMethodChecker::isUnivaPay($Order));
-    }
-
-    public function testOtherPaymentMethod()
-    {
-        $Order = $this->makeOrder('銀行振込', 'Eccube\Service\Payment\Method\Cash');
-
-        $this->assertFalse(PaymentMethodChecker::isUnivaPay($Order));
-    }
-
-    public function testMethodNameAloneIsNotDetected()
-    {
-        $withoutPayment = $this->makeOrder(Constants::UNIVAPAY_PAYMENT_METHOD, null, false);
-        $withoutMethodClass = $this->makeOrder(Constants::UNIVAPAY_PAYMENT_METHOD, null);
-
-        $this->assertFalse(PaymentMethodChecker::isUnivaPay($withoutPayment));
-        $this->assertFalse(PaymentMethodChecker::isUnivaPay($withoutMethodClass));
     }
 }

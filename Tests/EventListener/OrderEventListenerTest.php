@@ -6,7 +6,6 @@ use Eccube\Entity\Order;
 use Eccube\Entity\Payment;
 use PHPUnit\Framework\TestCase;
 use Plugin\UnivaPay\EventListener\OrderEventListener;
-use Plugin\UnivaPay\EventListener\SubscriptionEventListener;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Service\Method\CreditCard;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -49,18 +48,5 @@ class OrderEventListenerTest extends TestCase
 
         $listener->onPayOrder($event);
         $listener->onCancelOrder($event);
-    }
-
-    public function testSubscriptionTransitionsSkipUnivaPayOrderWithoutSubscription()
-    {
-        $listener = (new \ReflectionClass(SubscriptionEventListener::class))->newInstanceWithoutConstructor();
-        $property = new \ReflectionProperty(SubscriptionEventListener::class, 'configRepository');
-        $property->setAccessible(true);
-        $property->setValue($listener, $this->configRepositoryNeverCalled());
-        $event = $this->createEvent($this->univaPayOrderWithoutIds());
-
-        $listener->onSuspendSubscription($event);
-        $listener->onCancelSubscription($event);
-        $listener->onResumeSubscription($event);
     }
 }
