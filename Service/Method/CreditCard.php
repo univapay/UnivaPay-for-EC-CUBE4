@@ -127,6 +127,8 @@ class CreditCard implements PaymentMethodInterface
         elseif ($this->Order->getUnivapayParentSubscriptionId()) {
             $OrderStatus = $this->orderStatusRepository->find(UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
             $this->Order->setOrderStatus($OrderStatus);
+            // The is only a template for subscription order
+            $this->Order->setAddPoint(0);
 
             $this->purchaseFlow->rollback($this->Order, new PurchaseContext());
 
