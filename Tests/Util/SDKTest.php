@@ -16,6 +16,7 @@ class SDKTest extends TestCase
         };
         $config = new Config();
         $config->setApiUrl('https://api.univapay.com');
+        $config->setCustomerUrl('https://customer.univapay.com');
         $config->setAppId($encode(['alg' => 'HS256']).'.'.$encode($claims).'.signature');
         $config->setAppSecret('secret');
 

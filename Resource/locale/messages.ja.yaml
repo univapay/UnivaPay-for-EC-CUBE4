@@ -11,6 +11,7 @@ univa_pay.admin.config.required: 必須
 univa_pay.admin.config.back: プラグイン一覧
 univa_pay.admin.config.widget_url: ウィジェット URL
 univa_pay.admin.config.api_url: API URL
+univa_pay.admin.config.customer_url: 会員ページ URL
 univa_pay.admin.config.app_id: トークン
 univa_pay.admin.config.app_secret: シークレット
 univa_pay.admin.config.webhook_auth: Authorizationヘッダー
