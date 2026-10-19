@@ -77,6 +77,19 @@ class SDK
         throw new UnivaPayApiException(sprintf('Failed to %s %s: HTTP %d %s - %s', $resource, $id, $resp->getStatusCode(), $resp->getReasonPhrase(), $detail));
     }
 
+    public function getCustomerPageUrl(string $subscriptionId, string $email): ?string
+    {
+        $storeId = $this->client->getCurrentStoreId();
+        if ($storeId === null) {
+            return null;
+        }
+
+        return Constants::UNIVAPAY_CUSTOMER_URL.'/stores/'.$storeId.'?'.http_build_query([
+            'emailAddress' => $email,
+            'subscriptionId' => $subscriptionId,
+        ]);
+    }
+
     public function getCharge(string $chargeId)
     {
         return $this->execute('get charge', $chargeId, function () use ($chargeId) {
