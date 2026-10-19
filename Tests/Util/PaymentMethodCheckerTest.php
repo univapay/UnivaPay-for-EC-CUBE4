@@ -59,19 +59,12 @@ class PaymentMethodCheckerTest extends TestCase
         $this->assertFalse(PaymentMethodChecker::isUnivaPay($Order));
     }
 
-    public function testFallsBackToMethodNameWhenPaymentIsMissing()
+    public function testMethodNameAloneIsNotDetected()
     {
-        $univaPayOrder = $this->makeOrder(Constants::UNIVAPAY_PAYMENT_METHOD, null, false);
-        $otherOrder = $this->makeOrder('銀行振込', null, false);
+        $withoutPayment = $this->makeOrder(Constants::UNIVAPAY_PAYMENT_METHOD, null, false);
+        $withoutMethodClass = $this->makeOrder(Constants::UNIVAPAY_PAYMENT_METHOD, null);
 
-        $this->assertTrue(PaymentMethodChecker::isUnivaPay($univaPayOrder));
-        $this->assertFalse(PaymentMethodChecker::isUnivaPay($otherOrder));
-    }
-
-    public function testFallsBackWhenMethodClassIsNull()
-    {
-        $Order = $this->makeOrder(Constants::UNIVAPAY_PAYMENT_METHOD, null);
-
-        $this->assertTrue(PaymentMethodChecker::isUnivaPay($Order));
+        $this->assertFalse(PaymentMethodChecker::isUnivaPay($withoutPayment));
+        $this->assertFalse(PaymentMethodChecker::isUnivaPay($withoutMethodClass));
     }
 }

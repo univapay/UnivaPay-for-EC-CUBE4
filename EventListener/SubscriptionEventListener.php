@@ -3,7 +3,6 @@
 namespace Plugin\UnivaPay\EventListener;
 
 use Eccube\Entity\MailHistory;
-use Eccube\Entity\Order;
 use Eccube\Exception\ShoppingException;
 use Eccube\Repository\BaseInfoRepository;
 use Eccube\Repository\MailHistoryRepository;
@@ -71,11 +70,6 @@ class SubscriptionEventListener implements EventSubscriberInterface
         ];
     }
 
-    private function isUnivapayPayment(Order $order): bool
-    {
-        return PaymentMethodChecker::isUnivaPay($order);
-    }
-
     private function guard(callable $fn)
     {
         try {
@@ -90,7 +84,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
     public function onSuspendSubscription(Event $event)
     {
         $order = $event->getSubject()->getOrder();
-        if (!$this->isUnivapayPayment($order)) {
+        if (!PaymentMethodChecker::isUnivaPay($order) || !$order->getUnivapayParentSubscriptionId()) {
             return;
         }
 
@@ -109,7 +103,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
     public function onCancelSubscription(Event $event)
     {
         $order = $event->getSubject()->getOrder();
-        if (!$this->isUnivapayPayment($order)) {
+        if (!PaymentMethodChecker::isUnivaPay($order) || !$order->getUnivapayParentSubscriptionId()) {
             return;
         }
 
@@ -133,7 +127,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
     public function onResumeSubscription(Event $event)
     {
         $order = $event->getSubject()->getOrder();
-        if (!$this->isUnivapayPayment($order)) {
+        if (!PaymentMethodChecker::isUnivaPay($order) || !$order->getUnivapayParentSubscriptionId()) {
             return;
         }
 
