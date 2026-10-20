@@ -11,6 +11,7 @@ univa_pay.admin.config.required: 必須
 univa_pay.admin.config.back: プラグイン一覧
 univa_pay.admin.config.widget_url: ウィジェット URL
 univa_pay.admin.config.api_url: API URL
+univa_pay.admin.config.customer_url: 会員ページ URL
 univa_pay.admin.config.app_id: トークン
 univa_pay.admin.config.app_secret: シークレット
 univa_pay.admin.config.webhook_auth: Authorizationヘッダー
@@ -48,9 +49,11 @@ univa_pay.admin.subscription.status.completed: 完了
 univa_pay.shopping.checkout.close: 決済が中断されました
 univa_pay.shopping.checkout.error: カード決済に失敗しました。
 univa_pay.subscription.cancel: 解約
-univa_pay.subscription.change: カード変更
 univa_pay.subscription.period: 課金周期
 univa_pay.mypage.subscription.cancel.confirm: サブスクリプションをキャンセルしますか？
+univa_pay.mypage.subscription.cancel.error: 解約に失敗しました。時間をおいて再度お試しいただくか、ショップまでお問い合わせください。
+univa_pay.mypage.subscription.customer_page: お支払い情報の確認・変更
+univa_pay.mypage.subscription.customer_page.note: ご注文時のメールアドレスに届く認証メールからログインしてください。
 
 # error
 univa_pay.error.request: Univapayへのリクエストが失敗しました。EC-CUBEで注文ステータスを変更しないでください。

@@ -50,6 +50,7 @@ class PluginManagerTest extends EccubeTestCase
         $this->assertEmpty($config->getAppSecret());
         $this->assertEquals(Constants::UNIVAPAY_WIDGET_URL, $config->getWidgetUrl());
         $this->assertEquals(Constants::UNIVAPAY_API_URL, $config->getApiUrl());
+        $this->assertEquals(Constants::UNIVAPAY_CUSTOMER_URL, $config->getCustomerUrl());
         $this->assertFalse($config->getCapture());
 
         $subscriptionPeriodRepository = $this->client->getContainer()->get('doctrine')->getRepository(SubscriptionPeriod::class);

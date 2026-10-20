@@ -7,6 +7,7 @@ require_once __DIR__.'/../Resource/vendor/autoload.php';
 use Plugin\UnivaPay\Entity\Config;
 use Psr\Log\LoggerInterface;
 use UnivaPay\Authentication\BearerAuthCredentialsBuilder;
+use UnivaPay\Http\HttpCallBack;
 use UnivaPay\Logging\LoggingConfigurationBuilder;
 use UnivaPay\Logging\RequestLoggingConfigurationBuilder;
 use UnivaPay\Logging\ResponseLoggingConfigurationBuilder;
@@ -27,9 +28,13 @@ class SDK
     /** @var LoggerInterface */
     private $logger;
 
+    /** @var string|null */
+    private $customerUrl;
+
     public function __construct(Config $config, ?UnivapayClientSdkClient $client = null, ?LoggerInterface $logger = null)
     {
         $this->logger = $logger ?? UnivaPayLogger::get();
+        $this->customerUrl = $config->getCustomerUrl();
         $this->client = $client ?? UnivapayClientSdkClientBuilder::init()
             ->bearerAuthCredentials(
                 BearerAuthCredentialsBuilder::init(
@@ -75,6 +80,19 @@ class SDK
 
         $this->logger->error(sprintf('UnivaPay request failed: %s %s - HTTP %d %s - %s', $resource, $id, $resp->getStatusCode(), $resp->getReasonPhrase(), $detail));
         throw new UnivaPayApiException(sprintf('Failed to %s %s: HTTP %d %s - %s', $resource, $id, $resp->getStatusCode(), $resp->getReasonPhrase(), $detail));
+    }
+
+    public function getCustomerPageUrl(string $subscriptionId, string $email): ?string
+    {
+        $storeId = $this->client->getCurrentStoreId();
+        if ($storeId === null || !$this->customerUrl) {
+            return null;
+        }
+
+        return rtrim($this->customerUrl, '/').'/stores/'.$storeId.'?'.http_build_query([
+            'emailAddress' => $email,
+            'subscriptionId' => $subscriptionId,
+        ]);
     }
 
     public function getCharge(string $chargeId)

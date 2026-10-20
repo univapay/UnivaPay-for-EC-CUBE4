@@ -3,7 +3,9 @@
 namespace Plugin\UnivaPay;
 
 use Eccube\Event\TemplateEvent;
+use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\PaymentMethodChecker;
+use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\SubscriptionCartChecker;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -11,9 +13,12 @@ class UnivaPayEvent implements EventSubscriberInterface
 {
     private $subscriptionCartChecker;
 
-    public function __construct(SubscriptionCartChecker $subscriptionCartChecker)
+    private $configRepository;
+
+    public function __construct(SubscriptionCartChecker $subscriptionCartChecker, ConfigRepository $configRepository)
     {
         $this->subscriptionCartChecker = $subscriptionCartChecker;
+        $this->configRepository = $configRepository;
     }
 
     /**
@@ -44,13 +49,17 @@ class UnivaPayEvent implements EventSubscriberInterface
 
     public function onAdminOrderEditTwig(TemplateEvent $event)
     {
-        $Order = $event->hasParameter('Order') ? $event->getParameter('Order') : null;
-        $event->setParameter('UnivaPayOrder', PaymentMethodChecker::isUnivaPay($Order));
+        $this->setIsUnivaPayOrder($event);
         $event->addSnippet('@UnivaPay/admin/order_edit.twig');
     }
 
     public function onMypageHistoryTwig(TemplateEvent $event)
     {
+        $Order = $event->hasParameter('Order') ? $event->getParameter('Order') : null;
+        if (PaymentMethodChecker::isUnivaPay($Order) && $Order->getUnivapayParentSubscriptionId()) {
+            $sdk = new SDK($this->configRepository->findOneById(1));
+            $event->setParameter('UnivaPayCustomerPageUrl', $sdk->getCustomerPageUrl($Order->getUnivapayParentSubscriptionId(), $Order->getEmail()));
+        }
         $event->addSnippet('@UnivaPay/mypage_history.twig');
     }
 
@@ -61,8 +70,7 @@ class UnivaPayEvent implements EventSubscriberInterface
 
     public function onShoppingConfirmTwig(TemplateEvent $event)
     {
-        $Order = $event->hasParameter('Order') ? $event->getParameter('Order') : null;
-        $event->setParameter('UnivaPayOrder', PaymentMethodChecker::isUnivaPay($Order));
+        $this->setIsUnivaPayOrder($event);
         $event->addSnippet('@UnivaPay/shopping_confirm.twig');
     }
 
@@ -70,5 +78,11 @@ class UnivaPayEvent implements EventSubscriberInterface
     {
         $event->setParameter('UnivaPaySubscriptionInCart', $this->subscriptionCartChecker->hasSubscriptionItem());
         $event->addSnippet('@UnivaPay/shopping_login.twig');
+    }
+
+    private function setIsUnivaPayOrder(TemplateEvent $event)
+    {
+        $Order = $event->hasParameter('Order') ? $event->getParameter('Order') : null;
+        $event->setParameter('IsUnivaPayOrder', PaymentMethodChecker::isUnivaPay($Order));
     }
 }

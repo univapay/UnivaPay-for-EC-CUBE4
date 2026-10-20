@@ -67,6 +67,14 @@
                                 </div>
                             </div>
                             <div class="row">
+                                <div class="col-3"><span>{{ 'univa_pay.admin.config.customer_url'|trans }}</span><span
+                                            class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span></div>
+                                <div class="col mb-2">
+                                    {{ form_widget(form.customer_url) }}
+                                    {{ form_errors(form.customer_url) }}
+                                </div>
+                            </div>
+                            <div class="row">
                                 <div class="col-3"><span>{{ 'univa_pay.admin.config.capture'|trans }}</div>
                                 <div class="col mb-2">
                                     {{ form_widget(form.capture) }}

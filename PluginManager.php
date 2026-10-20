@@ -163,6 +163,7 @@ class PluginManager extends AbstractPluginManager
         $Config->setAppSecret('');
         $Config->setWidgetUrl(Constants::UNIVAPAY_WIDGET_URL);
         $Config->setApiUrl(Constants::UNIVAPAY_API_URL);
+        $Config->setCustomerUrl(Constants::UNIVAPAY_CUSTOMER_URL);
         $Config->setCapture(false);
 
         $entityManager->persist($Config);

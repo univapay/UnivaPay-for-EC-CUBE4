@@ -1,68 +1,37 @@
-{% if Order.OrderStatus.getId() == constant('Plugin\\UnivaPay\\Entity\\Master\\UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE') %}
-    {% set config = repository('Plugin\\UnivaPay\\Entity\\Config').findOneById(1) %}
-    <script src="{{ config.getWidgetUrl() }}/client/checkout.js"></script>
+{% set isSubscriptionActive = Order.OrderStatus.getId() == constant('Plugin\\UnivaPay\\Entity\\Master\\UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE') %}
+{% set customerPageUrl = UnivaPayCustomerPageUrl|default(null) %}
+{% if isSubscriptionActive or customerPageUrl %}
     <div id="univapay-subscription">
         <div class="ec-rectHeading">
             <h2>サブスクリプション</h2>
         </div>
+        {{ include('Shopping/alert.twig', { error_only: true }) }}
         <ul class="list-inline">
-            <li class="list-inline-item">
-                <button id="univapay-action__cancel" type="button"
-                        class="btn btn-ec-regular px-5">
-                    {{ 'univa_pay.subscription.cancel'|trans }}
-                </button>
-            </li>
+            {% if customerPageUrl %}
+                <li class="list-inline-item">
+                    <a href="{{ customerPageUrl }}" target="_blank" rel="noopener" class="ec-inlineBtn">
+                        {{ 'univa_pay.mypage.subscription.customer_page'|trans }}
+                    </a>
+                </li>
+            {% endif %}
+            {% if isSubscriptionActive %}
+                <li class="list-inline-item">
+                    <a href="{{ url('univa_pay_cancel_subscription', { id: Order.id }) }}" {{ csrf_token_for_anchor() }}
+                       data-method="put" data-message="{{ 'univa_pay.mypage.subscription.cancel.confirm'|trans }}"
+                       class="ec-inlineBtn">
+                        {{ 'univa_pay.subscription.cancel'|trans }}
+                    </a>
+                </li>
+            {% endif %}
         </ul>
+        {% if customerPageUrl %}
+            <p>{{ 'univa_pay.mypage.subscription.customer_page.note'|trans }}</p>
+        {% endif %}
     </div>
     <script>
         $(function () {
             // 支払情報の下にセクションを移動
             document.querySelector(".ec-orderPayment").after(document.querySelector("#univapay-subscription"));
-
-            $('#univapay-action__cancel').on('click', function () {
-                if (confirm("{{ 'univa_pay.mypage.subscription.cancel.confirm'|trans }}")) {
-                    $('#univapay-subscription button').prop('disabled', true);
-                    $.ajax({
-                        type: 'PUT',
-                        url: '{{ url('univa_pay_cancel_subscription', { id: Order.id }) }}',
-                        data: {
-                            mode: 'cancel'
-                        }
-                    }).always(function () {
-                        location.href = location.href;
-                    });
-                }
-            });
-
-            checkout = UnivapayCheckout.create({
-                appId: "{{ config.getAppId() }}",
-                checkout: "token",
-                tokenType: "subscription",
-                subscriptionPeriod: "daily",
-                email: "{{ Order.email }}",
-                onSuccess: (result) => {
-                    $.ajax({
-                        type: 'POST',
-                        url: '{{ url('univa_pay_update_subscription', { id: Order.id }) }}',
-                        data: result.response.id
-                    }).always(function () {
-                        location.href = location.href;
-                    });
-                },
-                onError: () => {
-                    alert("エラーが発生しました。サイト管理者にお問い合わせください。");
-                    location.href = location.href;
-                },
-                closed: () => {
-                    alert("決済が中断されました");
-                    location.href = location.href;
-                }
-            });
-
-            $('#univapay-action__change').on('click', function () {
-                $('#univapay-subscription button').prop('disabled', true);
-                checkout.open();
-            });
         });
     </script>
 {% endif %}
