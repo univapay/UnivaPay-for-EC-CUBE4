@@ -49,6 +49,9 @@ class Version20261013000000 extends AbstractMigration
         if (!$config->hasColumn('webhook_auth')) {
             $config->addColumn('webhook_auth', 'string', ['length' => 36, 'notnull' => false]);
         }
+        if (!$config->hasColumn('customer_url')) {
+            $config->addColumn('customer_url', 'string', ['length' => 1024, 'notnull' => false]);
+        }
 
         $order = $schema->getTable('dtb_order');
         if (!$order->hasColumn('univa_pay_parent_subscription_id')) {

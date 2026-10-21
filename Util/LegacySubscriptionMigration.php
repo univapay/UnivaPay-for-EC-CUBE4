@@ -74,6 +74,11 @@ class LegacySubscriptionMigration
         $legacyPaymentId = $legacyPayment->getId();
         $creditCardPaymentId = $creditCard->getId();
 
+        $connection->executeUpdate(
+            'UPDATE plg_univa_pay_config SET customer_url = ? WHERE customer_url IS NULL',
+            ['https://customer.univapay.com']
+        );
+
         $firstOrderIds = [];
         $chargeIdCounts = [];
         $legacyOrders = $connection->fetchAll(

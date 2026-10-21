@@ -2,7 +2,6 @@
 
 namespace Plugin\UnivaPay\EventListener;
 
-use Eccube\Entity\Order;
 use Eccube\Exception\ShoppingException;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\PaymentMethodChecker;
@@ -37,11 +36,6 @@ class OrderEventListener implements EventSubscriberInterface
         ];
     }
 
-    private function isUnivapayPayment(Order $order): bool
-    {
-        return PaymentMethodChecker::isUnivaPay($order);
-    }
-
     private function guard(callable $fn)
     {
         try {
@@ -56,7 +50,7 @@ class OrderEventListener implements EventSubscriberInterface
     public function onPayOrder(Event $event)
     {
         $order = $event->getSubject()->getOrder();
-        if (!$this->isUnivapayPayment($order)) {
+        if (!PaymentMethodChecker::isUnivaPay($order) || !$order->getUnivapayChargeId()) {
             return;
         }
 
@@ -78,7 +72,7 @@ class OrderEventListener implements EventSubscriberInterface
     public function onCancelOrder(Event $event)
     {
         $order = $event->getSubject()->getOrder();
-        if (!$this->isUnivapayPayment($order)) {
+        if (!PaymentMethodChecker::isUnivaPay($order) || !$order->getUnivapayChargeId()) {
             return;
         }
 

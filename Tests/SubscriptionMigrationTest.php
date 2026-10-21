@@ -100,6 +100,16 @@ class SubscriptionMigrationTest extends EccubeTestCase
         $this->assertChild($child, 'sub-b', 'charge-b2', OrderStatus::PAID);
     }
 
+    public function testFillsMissingCustomerUrl()
+    {
+        $connection = $this->entityManager->getConnection();
+        $connection->executeUpdate('UPDATE plg_univa_pay_config SET customer_url = NULL');
+
+        $this->migrate();
+
+        $this->assertSame('https://customer.univapay.com', $connection->fetchColumn('SELECT customer_url FROM plg_univa_pay_config'));
+    }
+
     public function testSecondRunChangesNothing()
     {
         $parent = $this->createLegacyOrder('sub-a', 'charge-a1', OrderStatus::PAID);
