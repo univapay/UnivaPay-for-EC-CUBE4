@@ -17,7 +17,7 @@ trait OrderTrait
      * dtb_order.univa_pay_charge_id
      *
      * @var string
-     * @ORM\Column(type="string", nullable=true)
+     * @ORM\Column(type="string", nullable=true, unique=true)
      */
     private $univa_pay_charge_id;
 
