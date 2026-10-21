@@ -8,7 +8,7 @@ use Doctrine\DBAL\Platforms\MySqlPlatform;
 use Doctrine\DBAL\Platforms\PostgreSqlPlatform;
 use Doctrine\DBAL\Schema\Schema;
 use PHPUnit\Framework\TestCase;
-use Plugin\UnivaPay\DoctrineMigrations\Version20261021000000;
+use Plugin\UnivaPay\DoctrineMigrations\Version20261013000000;
 
 class ChargeIdUniqueMigrationTest extends TestCase
 {
@@ -109,10 +109,33 @@ class ChargeIdUniqueMigrationTest extends TestCase
     {
         $schema = new Schema();
 
-        $schema->createTable('dtb_order')->addColumn(
+        // Include the original migration's existing columns.
+        $config = $schema->createTable('plg_univa_pay_config');
+
+        $config->addColumn(
+            'webhook_auth',
+            'string',
+            ['length' => 36, 'notnull' => false]
+        );
+
+        $config->addColumn(
+            'customer_url',
+            'string',
+            ['length' => 1024, 'notnull' => false]
+        );
+
+        $order = $schema->createTable('dtb_order');
+
+        $order->addColumn(
             'univa_pay_charge_id',
             'string',
             ['notnull' => false]
+        );
+
+        $order->addColumn(
+            'univa_pay_parent_subscription_id',
+            'string',
+            ['length' => 64, 'notnull' => false]
         );
 
         return $schema;
@@ -142,7 +165,7 @@ class ChargeIdUniqueMigrationTest extends TestCase
             ->willReturn($platform);
 
         // Capture the actual SQL queued by the migration.
-        $migration = new class($connection) extends Version20261021000000 {
+        $migration = new class($connection) extends Version20261013000000 {
             private $statements = [];
 
             public function __construct(Connection $connection)
