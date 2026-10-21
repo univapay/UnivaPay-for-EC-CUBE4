@@ -37,6 +37,11 @@ class ConfigType extends AbstractType
                     new NotBlank(),
                 ],
             ])
+            ->add('customer_url', UrlType::class, [
+                'constraints' => [
+                    new NotBlank(),
+                ],
+            ])
             ->add('capture', CheckboxType::class, [
                 'required' => false,
                 'label' => false,

@@ -17,6 +17,9 @@ final class Version20261013000000 extends AbstractMigration
         if (!$config->hasColumn('webhook_auth')) {
             $config->addColumn('webhook_auth', 'string', ['length' => 36, 'notnull' => false]);
         }
+        if (!$config->hasColumn('customer_url')) {
+            $config->addColumn('customer_url', 'string', ['length' => 1024, 'notnull' => false]);
+        }
 
         $order = $schema->getTable('dtb_order');
         if (!$order->hasColumn('univa_pay_parent_subscription_id')) {
@@ -26,7 +29,9 @@ final class Version20261013000000 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        $schema->getTable('plg_univa_pay_config')->dropColumn('webhook_auth');
+        $config = $schema->getTable('plg_univa_pay_config');
+        $config->dropColumn('webhook_auth');
+        $config->dropColumn('customer_url');
         $schema->getTable('dtb_order')->dropColumn('univa_pay_parent_subscription_id');
     }
 }

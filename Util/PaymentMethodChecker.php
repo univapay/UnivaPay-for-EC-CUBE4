@@ -8,8 +8,6 @@ use Plugin\UnivaPay\Service\Method\CreditCard;
 class PaymentMethodChecker
 {
     /**
-     * Determines whether the order is being paid for using UnivaPay.
-     *
      * @param Order|null $Order
      */
     public static function isUnivaPay($Order): bool
@@ -19,10 +17,10 @@ class PaymentMethodChecker
         }
 
         $Payment = $Order->getPayment();
-        if ($Payment && $Payment->getMethodClass()) {
-            return $Payment->getMethodClass() === CreditCard::class;
+        if (!$Payment) {
+            return false;
         }
 
-        return $Order->getPaymentMethod() === Constants::UNIVAPAY_PAYMENT_METHOD;
+        return $Payment->getMethodClass() === CreditCard::class;
     }
 }

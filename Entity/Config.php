@@ -38,6 +38,13 @@ class Config
     /**
      * @var string
      *
+     * @ORM\Column(name="customer_url", type="string", length=1024, nullable=true)
+     */
+    private $customer_url;
+
+    /**
+     * @var string
+     *
      * @ORM\Column(name="app_id", type="string", length=512, nullable=true)
      */
     private $app_id;
@@ -107,6 +114,26 @@ class Config
     public function setApiUrl($api_url)
     {
         $this->api_url = $api_url;
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCustomerUrl()
+    {
+        return $this->customer_url;
+    }
+
+    /**
+     * @param string $customer_url
+     *
+     * @return $this;
+     */
+    public function setCustomerUrl($customer_url)
+    {
+        $this->customer_url = $customer_url;
 
         return $this;
     }
