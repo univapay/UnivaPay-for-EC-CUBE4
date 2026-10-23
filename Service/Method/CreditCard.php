@@ -52,7 +52,7 @@ class CreditCard implements PaymentMethodInterface
     public function __construct(
         OrderStatusRepository $orderStatusRepository,
         PurchaseFlow $shoppingPurchaseFlow,
-        ConfigRepository $configRepository
+        ConfigRepository $configRepository,
     ) {
         $this->orderStatusRepository = $orderStatusRepository;
         $this->purchaseFlow = $shoppingPurchaseFlow;
@@ -148,17 +148,11 @@ class CreditCard implements PaymentMethodInterface
         return $result;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function setFormType(FormInterface $form)
     {
         $this->form = $form;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function setOrder(Order $Order)
     {
         $this->Order = $Order;

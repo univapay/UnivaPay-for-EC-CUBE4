@@ -14,12 +14,15 @@ trait ProductClassTrait
     /**
      * 支払周期を保存するカラム
      *
-     * @var \Plugin\UnivaPay\Entity\SubscriptionPeriod
+     * @var SubscriptionPeriod
      *
      * @ORM\ManyToOne(targetEntity="Plugin\UnivaPay\Entity\SubscriptionPeriod")
+     *
      * @ORM\JoinColumns({
+     *
      *  @ORM\JoinColumn(name="subscription_period_id", referencedColumnName="id")
      * })
+     *
      * @Eccube\FormAppend(
      *  auto_render=true,
      *  options={
@@ -44,7 +47,7 @@ trait ProductClassTrait
     /**
      * Get subscriptionPeriod
      *
-     * @return \Plugin\UnivaPay\Entity\SubscriptionPeriod|null
+     * @return SubscriptionPeriod|null
      */
     public function getSubscriptionPeriod()
     {

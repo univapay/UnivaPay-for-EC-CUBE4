@@ -14,6 +14,7 @@ trait CustomerTrait
      * カードの記憶用カラム.
      *
      * @var string
+     *
      * @ORM\Column(type="smallint", nullable=true)
      */
     public $univa_pay_cards;

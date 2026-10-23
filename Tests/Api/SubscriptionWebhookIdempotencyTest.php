@@ -40,7 +40,7 @@ class SubscriptionWebhookIdempotencyTest extends TestCase
         $sdk->expects($this->once())
             ->method('getLatestChargeBySubscriptionId')
             ->with('subscriptionId')
-            ->willReturn(new class() {
+            ->willReturn(new class {
                 public function getId()
                 {
                     return 'subscriptionAssociatedChargeId';
@@ -104,7 +104,7 @@ class SubscriptionWebhookIdempotencyTest extends TestCase
 
     private function controller(
         OrderRepository $orders,
-        MailService $mail
+        MailService $mail,
     ): SubscriptionController {
         $configs = $this->createMock(ConfigRepository::class);
 

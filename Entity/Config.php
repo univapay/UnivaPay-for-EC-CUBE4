@@ -8,6 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
  * Config
  *
  * @ORM\Table(name="plg_univa_pay_config")
+ *
  * @ORM\Entity(repositoryClass="Plugin\UnivaPay\Repository\ConfigRepository")
  */
 class Config
@@ -16,7 +17,9 @@ class Config
      * @var int
      *
      * @ORM\Column(name="id", type="integer", options={"unsigned":true})
+     *
      * @ORM\Id
+     *
      * @ORM\GeneratedValue(strategy="IDENTITY")
      */
     private $id;
@@ -187,8 +190,6 @@ class Config
     }
 
     /**
-     * @param string $webhook_auth
-     *
      * @return $this;
      */
     public function setWebhookAuth($value)

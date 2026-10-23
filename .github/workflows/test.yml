@@ -1,10 +1,13 @@
-name: PHP Unit
+name: CI
 
-on: 
+on:
   push:
     branches:
     - '*'
   pull_request:
+
+env:
+  PLUGIN_CODE: UnivaPay
 
 jobs:
   phpunit:
@@ -16,14 +19,20 @@ jobs:
         eccube: [ '4.3' ]
         php: [ '8.2', '8.3' ]
         db: [ mysql, pgsql ]
-        plugin-code: [ UnivaPay ]
         include:
           - db: mysql
             database_url: mysql://root:root@127.0.0.1:3306/eccube_db
-            database_server_version: 8.0
+            database_server_version: '8.0'
           - db: pgsql
             database_url: postgres://postgres:password@127.0.0.1:5432/eccube_db
-            database_server_version: 14
+            database_server_version: '14'
+
+    env:
+      APP_ENV: test
+      DATABASE_URL: ${{ matrix.database_url }}
+      DATABASE_SERVER_VERSION: ${{ matrix.database_server_version }}
+      ECCUBE_LOCALE: ja
+      MAILER_DSN: null://null
 
     services:
       mysql:
@@ -51,10 +60,10 @@ jobs:
         repository: EC-CUBE/ec-cube
         ref: ${{ matrix.eccube }}
 
-    - name: Checkout UnivaPay Plugin
+    - name: Checkout plugin
       uses: actions/checkout@v6
       with:
-        path: app/Plugin/${{ matrix.plugin-code }}
+        path: app/Plugin/${{ env.PLUGIN_CODE }}
 
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
@@ -63,47 +72,53 @@ jobs:
         extensions: apcu, intl, pdo_mysql, pdo_pgsql, zip, gd
         tools: composer:v2
 
-    - name: Get Composer Cache Directory
+    - name: Get Composer cache directory
       id: composer-cache
       run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
-    - uses: actions/cache@v5
+    - name: Cache Composer packages
+      uses: actions/cache@v5
       with:
         path: ${{ steps.composer-cache.outputs.dir }}
-        key: ${{ runner.os }}-composer-${{ matrix.eccube }}-${{ matrix.php }}-${{ hashFiles('**/composer.lock') }}
+        key: ${{ runner.os }}-composer-${{ matrix.eccube }}-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
         restore-keys: ${{ runner.os }}-composer-${{ matrix.eccube }}-${{ matrix.php }}-
 
-    - name: composer install
+    - name: Install EC-CUBE dependencies
       run: composer install --no-scripts --no-progress
 
-    - name: Setup EC-CUBE and plugin
-      env:
-        APP_ENV: 'test'
-        DATABASE_URL: ${{ matrix.database_url }}
-        DATABASE_SERVER_VERSION: ${{ matrix.database_server_version }}
-        ECCUBE_LOCALE: ja
+    - name: Install EC-CUBE and plugin
       run: |
         bin/console doctrine:database:create
         bin/console doctrine:schema:create
         bin/console eccube:fixtures:load
-        bin/console eccube:plugin:install --code ${{ matrix.plugin-code }}
-        bin/console eccube:plugin:enable --code ${{ matrix.plugin-code }}
+        bin/console eccube:plugin:install --code "$PLUGIN_CODE"
+        bin/console eccube:plugin:enable --code "$PLUGIN_CODE"
         bin/console cache:clear --no-warmup
 
-    - name: PHPUnit for plugin
-      env:
-        APP_ENV: 'test'
-        DATABASE_URL: ${{ matrix.database_url }}
-        DATABASE_SERVER_VERSION: ${{ matrix.database_server_version }}
-        MAILER_DSN: 'null://null'
-      run: |
-        vendor/bin/phpunit app/Plugin/${{ matrix.plugin-code }}/Tests
+    - name: Run PHPUnit
+      run: vendor/bin/phpunit "app/Plugin/$PLUGIN_CODE/Tests"
+
+  php-cs-fixer:
+    name: php-cs-fixer
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        tools: php-cs-fixer:3.65.0
+
+    - name: Check code style
+      run: php-cs-fixer check --config=.php-cs-fixer.dist.php --diff --using-cache=no
 
   ci-test:
     name: Test Result
     if: always()
-    needs: phpunit
+    needs: [ phpunit, php-cs-fixer ]
     runs-on: ubuntu-latest
     steps:
-    - name: Fail unless every matrix job passed
-      run: test "${{ needs.phpunit.result }}" = "success"
+    - name: Fail unless every job passed
+      if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+      run: exit 1
