@@ -13,9 +13,12 @@ use Plugin\UnivaPay\Util\PaymentMethodChecker;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\UnivaPayApiException;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
-use Swift_Mailer;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\Workflow\Event\Event;
 use Twig\Environment;
 use UnivaPay\Models\SubscriptionStatus;
@@ -34,10 +37,10 @@ class SubscriptionEventListener implements EventSubscriberInterface
     /** @var MailTemplateRepository */
     private $mailTemplateRepository;
 
-    /** @var SessionInterface */
-    private $session;
+    /** @var RequestStack */
+    private $requestStack;
 
-    /** @var Swift_Mailer */
+    /** @var MailerInterface */
     private $mailer;
 
     /** @var Environment */
@@ -48,20 +51,20 @@ class SubscriptionEventListener implements EventSubscriberInterface
         ConfigRepository $configRepository,
         MailHistoryRepository $mailHistoryRepository,
         MailTemplateRepository $mailTemplateRepository,
-        SessionInterface $session,
-        Swift_Mailer $mailer,
-        Environment $twig
+        RequestStack $requestStack,
+        MailerInterface $mailer,
+        Environment $twig,
     ) {
         $this->baseInfo = $baseInfoRepository->get();
         $this->configRepository = $configRepository;
         $this->mailHistoryRepository = $mailHistoryRepository;
         $this->mailTemplateRepository = $mailTemplateRepository;
-        $this->session = $session;
+        $this->requestStack = $requestStack;
         $this->mailer = $mailer;
         $this->twig = $twig;
     }
 
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [
             'workflow.order.transition.subscription_suspend' => 'onSuspendSubscription',
@@ -76,7 +79,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
             return $fn();
         } catch (UnivaPayApiException $e) {
             $message = trans('univa_pay.admin.order_edit.action_error', ['%message%' => $e->getMessage()]);
-            $this->session->getFlashBag()->add('eccube.admin.error', $message);
+            $this->requestStack->getSession()->getFlashBag()->add('eccube.admin.error', $message);
             throw new ShoppingException($message);
         }
     }
@@ -157,30 +160,28 @@ class SubscriptionEventListener implements EventSubscriberInterface
             'Order' => $order,
         ]);
 
-        $message = (new \Swift_Message())
-            ->setSubject('['.$this->baseInfo->getShopName().'] '.$MailTemplate->getMailSubject())
-            ->setFrom([$this->baseInfo->getEmail01() => $this->baseInfo->getShopName()])
-            ->setTo([$order->getEmail()])
-            ->setBcc($this->baseInfo->getEmail01())
-            ->setReplyTo($this->baseInfo->getEmail03())
-            ->setReturnPath($this->baseInfo->getEmail04());
+        $message = (new Email())
+            ->subject('['.$this->baseInfo->getShopName().'] '.$MailTemplate->getMailSubject())
+            ->from(new Address($this->baseInfo->getEmail01(), $this->baseInfo->getShopName()))
+            ->to($order->getEmail())
+            ->bcc($this->baseInfo->getEmail01())
+            ->replyTo($this->baseInfo->getEmail03())
+            ->returnPath($this->baseInfo->getEmail04())
+            ->text($body);
 
-        $message->setBody($body);
-
-        $count = $this->mailer->send($message);
+        try {
+            $this->mailer->send($message);
+        } catch (TransportExceptionInterface $e) {
+            UnivaPayLogger::get()->critical($e->getMessage());
+        }
 
         $MailHistory = new MailHistory();
         $MailHistory->setMailSubject($message->getSubject())
-            ->setMailBody($message->getBody())
+            ->setMailBody($message->getTextBody())
             ->setOrder($order)
             ->setSendDate(new \DateTime());
-
-        $multipart = $message->getChildren();
-        if (count($multipart) > 0) {
-            $MailHistory->setMailHtmlBody($multipart[0]->getBody());
-        }
         $this->mailHistoryRepository->save($MailHistory);
 
-        UnivaPayLogger::get()->info('サブスク停止メール送信完了', ['count' => $count]);
+        UnivaPayLogger::get()->info('サブスク停止メール送信完了');
     }
 }

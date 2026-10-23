@@ -11,10 +11,10 @@ use Plugin\UnivaPay\Util\SubscriptionCartChecker;
 
 class SubscriptionCartCheckerTest extends TestCase
 {
-    /** @var CartService|\PHPUnit_Framework_MockObject_MockObject */
+    /** @var CartService|\PHPUnit\Framework\MockObject\MockObject */
     private $cartService;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->cartService = $this->createMock(CartService::class);
     }

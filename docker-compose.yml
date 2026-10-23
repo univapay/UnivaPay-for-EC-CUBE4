@@ -6,14 +6,15 @@ volumes:
 
 services:
   web:
-    image: ghcr.io/nanasess/ec-cube-php:7.4-apache-4.0
+    image: ghcr.io/ec-cube/ec-cube-php:8.3-apache-4.3.1
+    platform: linux/amd64
     ports:
       - "1080:80"
     environment:
       - APP_ENV=dev
       - DATABASE_URL=mysql://root:@db:3306/eccubedb
-      - DATABASE_SERVER_VERSION=5.7
-      - MAILER_URL=smtp://mail:1025
+      - DATABASE_SERVER_VERSION=8.0
+      - MAILER_DSN=smtp://mail:1025
       - ECCUBE_TIMEZONE=Asia/Tokyo
       - ECCUBE_CURRENCY=JPY
       - ECCUBE_ADMIN_USER=admin
@@ -51,7 +52,7 @@ services:
       - backend
   
   db:
-    image: mysql:5.7
+    image: mysql:8.0
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     volumes:

@@ -8,7 +8,7 @@ use Plugin\UnivaPay\Util\SubscriptionCartChecker;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -17,19 +17,19 @@ use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 class GuestCheckoutEventListenerTest extends TestCase
 {
-    /** @var TokenStorageInterface|\PHPUnit_Framework_MockObject_MockObject */
+    /** @var TokenStorageInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $tokenStorage;
 
-    /** @var AuthorizationCheckerInterface|\PHPUnit_Framework_MockObject_MockObject */
+    /** @var AuthorizationCheckerInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $authorizationChecker;
 
-    /** @var RouterInterface|\PHPUnit_Framework_MockObject_MockObject */
+    /** @var RouterInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $router;
 
-    /** @var SubscriptionCartChecker|\PHPUnit_Framework_MockObject_MockObject */
+    /** @var SubscriptionCartChecker|\PHPUnit\Framework\MockObject\MockObject */
     private $subscriptionCartChecker;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->setAuthenticated(false);
         $this->router = $this->createMock(RouterInterface::class);
@@ -63,13 +63,13 @@ class GuestCheckoutEventListenerTest extends TestCase
         );
     }
 
-    private function makeEvent($route, $isXmlHttpRequest = false, $requestType = HttpKernelInterface::MASTER_REQUEST)
+    private function makeEvent($route, $isXmlHttpRequest = false, $requestType = HttpKernelInterface::MAIN_REQUEST)
     {
         $server = $isXmlHttpRequest ? ['HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest'] : [];
         $request = Request::create('/', 'GET', [], [], [], $server);
         $request->attributes->set('_route', $route);
 
-        return new GetResponseEvent($this->createMock(HttpKernelInterface::class), $request, $requestType);
+        return new RequestEvent($this->createMock(HttpKernelInterface::class), $request, $requestType);
     }
 
     public function testBlocksGuestOnEveryGuestCheckoutRoute()

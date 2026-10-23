@@ -13,15 +13,14 @@ use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
 use Eccube\Service\PurchaseFlow\PurchaseContext;
 use Eccube\Service\PurchaseFlow\PurchaseFlow;
 use Plugin\UnivaPay\Entity\Config;
-use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Repository\ConfigRepository;
+use Plugin\UnivaPay\Util\ChargeOrderDuplicationPrevention;
 use Plugin\UnivaPay\Util\OrderCopier;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
-use Plugin\UnivaPay\Util\ChargeOrderDuplicationPrevention;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
 
 class SubscriptionController extends AbstractController
 {
@@ -42,7 +41,7 @@ class SubscriptionController extends AbstractController
         PurchaseFlow $shoppingPurchaseFlow,
         OrderHelper $orderHelper,
         OrderNoProcessor $orderNoProcessor,
-        MailService $mailService
+        MailService $mailService,
     ) {
         $this->addPointProcessor = $addPointProcessor;
         $this->Config = $configRepository;
@@ -83,9 +82,9 @@ class SubscriptionController extends AbstractController
             $data = json_decode($request->getContent());
 
             if (
-                !is_object($data) ||
-                !isset($data->event) ||
-                !is_string($data->event)
+                !is_object($data)
+                || !isset($data->event)
+                || !is_string($data->event)
             ) {
                 return new Response('Ignored: invalid payload', 200);
             }
@@ -100,11 +99,11 @@ class SubscriptionController extends AbstractController
             }
 
             if (
-                !isset($data->data->id, $data->data->amount) ||
-                !is_string($data->data->id) ||
-                $data->data->id === '' ||
-                !is_int($data->data->amount) ||
-                $data->data->amount < 0
+                !isset($data->data->id, $data->data->amount)
+                || !is_string($data->data->id)
+                || $data->data->id === ''
+                || !is_int($data->data->amount)
+                || $data->data->amount < 0
             ) {
                 UnivaPayLogger::get()->warning(
                     'Webhook ignored: invalid subscription payload'
@@ -235,6 +234,7 @@ class SubscriptionController extends AbstractController
 
         return true;
     }
+
     /**
      * Allows SDK replacement in tests without a live connection.
      */
@@ -250,7 +250,7 @@ class SubscriptionController extends AbstractController
         Order $existingOrder,
         $data,
         $charge,
-        string $event
+        string $event,
     ): Order {
         $newOrder = OrderCopier::copy($existingOrder);
 
