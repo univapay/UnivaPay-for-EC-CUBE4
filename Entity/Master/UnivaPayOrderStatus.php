@@ -7,12 +7,11 @@ use Eccube\Entity\Master\OrderStatus;
 
 /**
  * @ORM\Entity
- *
  * @ORM\Table(name="mtb_order_status")
  */
 class UnivaPayOrderStatus extends OrderStatus
 {
-    public const UNIVAPAY_SUBSCRIPTION_ACTIVE = 100;
-    public const UNIVAPAY_SUBSCRIPTION_CANCEL = 101;
-    public const UNIVAPAY_SUBSCRIPTION_SUSPEND = 102;
+    const UNIVAPAY_SUBSCRIPTION_ACTIVE = 8001;
+    const UNIVAPAY_SUBSCRIPTION_CANCEL = 8002;
+    const UNIVAPAY_SUBSCRIPTION_SUSPEND = 8003;
 }

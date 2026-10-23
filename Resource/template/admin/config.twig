@@ -11,17 +11,19 @@
 
 {% block main %}
     <script>
-        function generateWebhookAuth()
-        {
-            document.getElementById('{{ form.webhook_auth.vars.id }}').value = crypto.randomUUID();
+        function generateWebhookAuth() {
+            document.getElementById("{{ form.webhook_auth.vars.id }}").value =
+                crypto.randomUUID();
         }
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
-        const error = urlParams.get('error');
-        if(error === '0') {
+        const error = urlParams.get("error");
+        if (error === "0") {
             alert("インストールに成功しました。");
-        } else if(error === '1') {
-            alert("インストールができませんでした。サーバ内で下記コマンドを実行してください。\nbin/console eccube:composer:require univapay/php-sdk:^6.7");
+        } else if (error === "1") {
+            alert(
+                "インストールができませんでした。サーバ内で下記コマンドを実行してください。\nbin/console eccube:composer:require univapay/php-sdk:^6.7",
+            );
         }
     </script>
     <form role="form" method="post">
@@ -32,43 +34,55 @@
             <div class="c-contentsArea__primaryCol">
                 <div class="c-primaryCol">
                     <div class="card rounded border-0 mb-4">
-                        <div class="card-header"><span>{{ 'univa_pay.admin.config.header'|trans }}</span></div>
+                        <div class="card-header">
+                            <span>{{ 'univa_pay.admin.config.header'|trans }}</span>
+                        </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-3"><span>{{ 'univa_pay.admin.config.app_id'|trans }}</span><span
-                                            class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span></div>
+                                <div class="col-3">
+                                    <span>{{ 'univa_pay.admin.config.app_id'|trans }}</span>
+                                    <span class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span>
+                                </div>
                                 <div class="col mb-2">
                                     {{ form_widget(form.app_id) }}
                                     {{ form_errors(form.app_id) }}
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-3"><span>{{ 'univa_pay.admin.config.app_secret'|trans }}</span><span
-                                            class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span></div>
+                                <div class="col-3">
+                                    <span>{{ 'univa_pay.admin.config.app_secret'|trans }}</span>
+                                    <span class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span>
+                                </div>
                                 <div class="col mb-2">
                                     {{ form_widget(form.app_secret) }}
                                     {{ form_errors(form.app_secret) }}
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-3"><span>{{ 'univa_pay.admin.config.widget_url'|trans }}</span><span
-                                            class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span></div>
+                                <div class="col-3">
+                                    <span>{{ 'univa_pay.admin.config.widget_url'|trans }}</span>
+                                    <span class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span>
+                                </div>
                                 <div class="col mb-2">
                                     {{ form_widget(form.widget_url) }}
                                     {{ form_errors(form.widget_url) }}
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-3"><span>{{ 'univa_pay.admin.config.api_url'|trans }}</span><span
-                                            class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span></div>
+                                <div class="col-3">
+                                    <span>{{ 'univa_pay.admin.config.api_url'|trans }}</span>
+                                    <span class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span>
+                                </div>
                                 <div class="col mb-2">
                                     {{ form_widget(form.api_url) }}
                                     {{ form_errors(form.api_url) }}
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-3"><span>{{ 'univa_pay.admin.config.customer_url'|trans }}</span><span
-                                            class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span></div>
+                                <div class="col-3">
+                                    <span>{{ 'univa_pay.admin.config.customer_url'|trans }}</span>
+                                    <span class="badge badge-primary ml-1">{{ 'univa_pay.admin.config.required'|trans }}</span>
+                                </div>
                                 <div class="col mb-2">
                                     {{ form_widget(form.customer_url) }}
                                     {{ form_errors(form.customer_url) }}
@@ -101,8 +115,10 @@
                 <div class="row justify-content-between align-items-center">
                     <div class="col-6">
                         <div class="c-conversionArea__leftBlockItem">
-                            <a class="c-baseLink"
-                               href="{{ url('admin_store_plugin') }}">
+                            <a
+                                class="c-baseLink"
+                                href="{{ url('admin_store_plugin') }}"
+                            >
                                 <i class="fa fa-backward" aria-hidden="true"></i>
                                 <span>{{ 'univa_pay.admin.config.back'|trans }}</span>
                             </a>
@@ -111,8 +127,9 @@
                     <div class="col-3">
                         <div class="row align-items-center justify-content-end">
                             <div class="col-auto">
-                                <button class="btn btn-ec-conversion px-5"
-                                        type="submit">{{ 'univa_pay.admin.config.save'|trans }}</button>
+                                <button class="btn btn-ec-conversion px-5" type="submit">
+                                    {{ 'univa_pay.admin.config.save'|trans }}
+                                </button>
                             </div>
                         </div>
                     </div>
