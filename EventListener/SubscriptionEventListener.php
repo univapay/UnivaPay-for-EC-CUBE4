@@ -7,6 +7,7 @@ use Eccube\Exception\ShoppingException;
 use Eccube\Repository\BaseInfoRepository;
 use Eccube\Repository\MailHistoryRepository;
 use Eccube\Repository\MailTemplateRepository;
+use Eccube\Service\MailService;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\Constants;
 use Plugin\UnivaPay\Util\PaymentMethodChecker;
@@ -43,6 +44,9 @@ class SubscriptionEventListener implements EventSubscriberInterface
     /** @var MailerInterface */
     private $mailer;
 
+    /** @var MailService */
+    private $mailService;
+
     /** @var Environment */
     private $twig;
 
@@ -53,6 +57,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
         MailTemplateRepository $mailTemplateRepository,
         RequestStack $requestStack,
         MailerInterface $mailer,
+        MailService $mailService,
         Environment $twig,
     ) {
         $this->baseInfo = $baseInfoRepository->get();
@@ -61,6 +66,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
         $this->mailTemplateRepository = $mailTemplateRepository;
         $this->requestStack = $requestStack;
         $this->mailer = $mailer;
+        $this->mailService = $mailService;
         $this->twig = $twig;
     }
 
@@ -163,7 +169,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
         $message = (new Email())
             ->subject('['.$this->baseInfo->getShopName().'] '.$MailTemplate->getMailSubject())
             ->from(new Address($this->baseInfo->getEmail01(), $this->baseInfo->getShopName()))
-            ->to($order->getEmail())
+            ->to($this->mailService->convertRFCViolatingEmail($order->getEmail()))
             ->bcc($this->baseInfo->getEmail01())
             ->replyTo($this->baseInfo->getEmail03())
             ->returnPath($this->baseInfo->getEmail04())
