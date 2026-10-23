@@ -98,3 +98,12 @@ jobs:
         MAILER_DSN: 'null://null'
       run: |
         vendor/bin/phpunit app/Plugin/${{ matrix.plugin-code }}/Tests
+
+  ci-test:
+    name: Test Result
+    if: always()
+    needs: phpunit
+    runs-on: ubuntu-latest
+    steps:
+    - name: Fail unless every matrix job passed
+      run: test "${{ needs.phpunit.result }}" = "success"
