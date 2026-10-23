@@ -26,7 +26,7 @@ class SubscriptionMigrationTest extends EccubeTestCase
     /** @var Delivery */
     private $delivery;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -103,11 +103,11 @@ class SubscriptionMigrationTest extends EccubeTestCase
     public function testFillsMissingCustomerUrl()
     {
         $connection = $this->entityManager->getConnection();
-        $connection->executeUpdate('UPDATE plg_univa_pay_config SET customer_url = NULL');
+        $connection->executeStatement('UPDATE plg_univa_pay_config SET customer_url = NULL');
 
         $this->migrate();
 
-        $this->assertSame('https://customer.univapay.com', $connection->fetchColumn('SELECT customer_url FROM plg_univa_pay_config'));
+        $this->assertSame('https://customer.univapay.com', $connection->fetchOne('SELECT customer_url FROM plg_univa_pay_config'));
     }
 
     public function testSecondRunChangesNothing()

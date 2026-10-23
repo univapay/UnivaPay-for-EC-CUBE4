@@ -9,6 +9,7 @@ use Eccube\Repository\BaseInfoRepository;
 use Eccube\Repository\MailTemplateRepository;
 use Plugin\UnivaPay\Util\Constants;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Twig\Environment;
 
 class MailEventListener implements EventSubscriberInterface
 {
@@ -19,14 +20,14 @@ class MailEventListener implements EventSubscriberInterface
     public function __construct(
         BaseInfoRepository $baseInfoRepository,
         MailTemplateRepository $mailTemplateRepository,
-        \Twig_Environment $twig
+        Environment $twig,
     ) {
         $this->baseInfo = $baseInfoRepository->get();
         $this->mailTemplateRepository = $mailTemplateRepository;
         $this->twig = $twig;
     }
 
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [
             EccubeEvents::MAIL_ORDER => 'onMailOrder',
@@ -46,24 +47,16 @@ class MailEventListener implements EventSubscriberInterface
                 'name' => Constants::MAIL_TEMPLATE_UNIVAPAY_SUBSCRIPTION_ACTIVE,
             ]);
 
-            $msg->setSubject('['.$this->baseInfo->getShopName().'] '.$subscriptionMailTemplate->getMailSubject());
-            $body = $this->twig->render($subscriptionMailTemplate->getFileName(), [
+            $msg->subject('['.$this->baseInfo->getShopName().'] '.$subscriptionMailTemplate->getMailSubject());
+            $msg->text($this->twig->render($subscriptionMailTemplate->getFileName(), [
                 'Order' => $order,
-            ]);
+            ]));
 
+            // Null clears the HTML part core rendered from the regular order template.
             $htmlFileName = $this->getHtmlTemplate($subscriptionMailTemplate->getFileName());
-            if (!is_null($htmlFileName)) {
-                $htmlBody = $this->twig->render($htmlFileName, [
-                    'Order' => $order,
-                ]);
-
-                $msg
-                    ->setContentType('text/plain; charset=UTF-8')
-                    ->setBody($body, 'text/plain')
-                    ->addPart($htmlBody, 'text/html');
-            } else {
-                $msg->setBody($body);
-            }
+            $msg->html(is_null($htmlFileName) ? null : $this->twig->render($htmlFileName, [
+                'Order' => $order,
+            ]));
         }
     }
 

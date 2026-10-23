@@ -10,33 +10,33 @@ use Eccube\Service\PurchaseFlow\PurchaseFlow;
 use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 class CartValidationEventListener implements EventSubscriberInterface
 {
     private $cartService;
-    private $session;
+    private $requestStack;
     private $router;
     private $cartPurchaseFlow;
     private $tokenStorage;
 
     public function __construct(
         CartService $cartService,
-        SessionInterface $session,
+        RequestStack $requestStack,
         RouterInterface $router,
         PurchaseFlow $cartPurchaseFlow,
-        TokenStorageInterface $tokenStorage
+        TokenStorageInterface $tokenStorage,
     ) {
         $this->cartService = $cartService;
-        $this->session = $session;
+        $this->requestStack = $requestStack;
         $this->router = $router;
         $this->cartPurchaseFlow = $cartPurchaseFlow;
         $this->tokenStorage = $tokenStorage;
     }
 
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [
             EccubeEvents::FRONT_PRODUCT_CART_ADD_COMPLETE => 'onCartComplete',
@@ -70,9 +70,9 @@ class CartValidationEventListener implements EventSubscriberInterface
             $request = $event->getRequest();
 
             if ($request->isXmlHttpRequest()) {
-                $this->session->getFlashBag()->add('eccube.front.request.error', $message);
+                $this->requestStack->getSession()->getFlashBag()->add('eccube.front.request.error', $message);
             } else {
-                $this->session->getFlashBag()->add('eccube.front.request.error', $message);
+                $this->requestStack->getSession()->getFlashBag()->add('eccube.front.request.error', $message);
                 $event->setResponse(new RedirectResponse($this->router->generate('cart')));
             }
         }

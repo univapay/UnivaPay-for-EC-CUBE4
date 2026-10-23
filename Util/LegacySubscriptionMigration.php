@@ -23,7 +23,7 @@ class LegacySubscriptionMigration
     /**
      * Only installs up to 1.5.0 have a dtb_payment row with this (now deleted) class.
      */
-    const PAYMENT_METHOD_CLASS = 'Plugin\UnivaPay\Service\Method\Subscription';
+    public const PAYMENT_METHOD_CLASS = 'Plugin\UnivaPay\Service\Method\Subscription';
 
     public static function isRequired(EntityManagerInterface $entityManager)
     {
@@ -74,14 +74,14 @@ class LegacySubscriptionMigration
         $legacyPaymentId = $legacyPayment->getId();
         $creditCardPaymentId = $creditCard->getId();
 
-        $connection->executeUpdate(
+        $connection->executeStatement(
             'UPDATE plg_univa_pay_config SET customer_url = ? WHERE customer_url IS NULL',
             ['https://customer.univapay.com']
         );
 
         $firstOrderIds = [];
         $chargeIdCounts = [];
-        $legacyOrders = $connection->fetchAll(
+        $legacyOrders = $connection->fetchAllAssociative(
             'SELECT id, univa_pay_subscription_id, univa_pay_charge_id FROM dtb_order WHERE payment_id = ? ORDER BY id',
             [$legacyPaymentId]
         );
@@ -100,11 +100,11 @@ class LegacySubscriptionMigration
         }
 
         // univa_pay_subscription_id is left as is so the original 1.5.0 data survives.
-        $connection->executeUpdate(
+        $connection->executeStatement(
             'UPDATE dtb_order SET univa_pay_parent_subscription_id = univa_pay_subscription_id WHERE payment_id = ? AND univa_pay_subscription_id IS NOT NULL',
             [$legacyPaymentId]
         );
-        $connection->executeUpdate(
+        $connection->executeStatement(
             'UPDATE dtb_order SET payment_id = ?, payment_method = ? WHERE payment_id = ?',
             [$creditCardPaymentId, Constants::UNIVAPAY_PAYMENT_METHOD, $legacyPaymentId]
         );
@@ -120,7 +120,7 @@ class LegacySubscriptionMigration
         }
 
         self::movePaymentOptions($connection, $legacyPaymentId, $creditCardPaymentId);
-        $connection->executeUpdate('DELETE FROM dtb_payment WHERE id = ?', [$legacyPaymentId]);
+        $connection->executeStatement('DELETE FROM dtb_payment WHERE id = ?', [$legacyPaymentId]);
 
         UnivaPayLogger::get()->info('[UnivaPay] legacy subscriptions migrated', [
             'parents_by_status' => $statusCounts,
@@ -132,9 +132,9 @@ class LegacySubscriptionMigration
 
     private static function movePaymentOptions(Connection $connection, $legacyPaymentId, $creditCardPaymentId)
     {
-        $deliveryIds = $connection->fetchAll('SELECT delivery_id FROM dtb_payment_option WHERE payment_id = ?', [$legacyPaymentId]);
+        $deliveryIds = $connection->fetchAllAssociative('SELECT delivery_id FROM dtb_payment_option WHERE payment_id = ?', [$legacyPaymentId]);
         foreach ($deliveryIds as $row) {
-            $exists = $connection->fetchColumn(
+            $exists = $connection->fetchOne(
                 'SELECT 1 FROM dtb_payment_option WHERE delivery_id = ? AND payment_id = ?',
                 [$row['delivery_id'], $creditCardPaymentId]
             );
@@ -146,7 +146,7 @@ class LegacySubscriptionMigration
                 ]);
             }
         }
-        $connection->executeUpdate('DELETE FROM dtb_payment_option WHERE payment_id = ?', [$legacyPaymentId]);
+        $connection->executeStatement('DELETE FROM dtb_payment_option WHERE payment_id = ?', [$legacyPaymentId]);
     }
 
     /**
@@ -157,7 +157,7 @@ class LegacySubscriptionMigration
     {
         $now = (new \DateTime())->format('Y-m-d H:i:s');
 
-        $order = $connection->fetchAssoc('SELECT * FROM dtb_order WHERE id = ?', [$orderId]);
+        $order = $connection->fetchAssociative('SELECT * FROM dtb_order WHERE id = ?', [$orderId]);
         unset($order['id']);
         $connection->insert('dtb_order', array_merge($order, [
             'pre_order_id' => null,
@@ -175,7 +175,7 @@ class LegacySubscriptionMigration
         $parentId = $connection->lastInsertId('dtb_order_id_seq');
 
         $shippingIds = [];
-        foreach ($connection->fetchAll('SELECT * FROM dtb_shipping WHERE order_id = ? ORDER BY id', [$orderId]) as $shipping) {
+        foreach ($connection->fetchAllAssociative('SELECT * FROM dtb_shipping WHERE order_id = ? ORDER BY id', [$orderId]) as $shipping) {
             $oldShippingId = $shipping['id'];
             unset($shipping['id']);
             $connection->insert('dtb_shipping', array_merge($shipping, [
@@ -192,7 +192,7 @@ class LegacySubscriptionMigration
             $shippingIds[$oldShippingId] = $connection->lastInsertId('dtb_shipping_id_seq');
         }
 
-        $items = $connection->fetchAll(
+        $items = $connection->fetchAllAssociative(
             'SELECT * FROM dtb_order_item WHERE order_id = ? AND order_item_type_id NOT IN (?, ?) ORDER BY id',
             [$orderId, OrderItemType::DISCOUNT, OrderItemType::POINT]
         );

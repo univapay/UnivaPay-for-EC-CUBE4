@@ -36,7 +36,7 @@ class UnivaPayEvent implements EventSubscriberInterface
      *
      * {@inheritdoc}
      */
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [
             '@admin/Order/edit.twig' => 'onAdminOrderEditTwig',

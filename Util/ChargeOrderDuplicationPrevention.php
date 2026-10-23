@@ -2,8 +2,8 @@
 
 namespace Plugin\UnivaPay\Util;
 
-use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\DBAL\LockMode;
+use Doctrine\ORM\EntityManagerInterface;
 use Eccube\Entity\Order;
 use Eccube\Repository\OrderRepository;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
@@ -15,7 +15,7 @@ class ChargeOrderDuplicationPrevention
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        OrderRepository $orders
+        OrderRepository $orders,
     ) {
         $this->entityManager = $entityManager;
         $this->orders = $orders;
@@ -27,12 +27,10 @@ class ChargeOrderDuplicationPrevention
     public function createOnce(
         string $subscriptionId,
         string $chargeId,
-        callable $create
+        callable $create,
     ): array {
         if ($subscriptionId === '' || $chargeId === '') {
-            throw new \InvalidArgumentException(
-                'Subscription ID and Charge ID are required'
-            );
+            throw new \InvalidArgumentException('Subscription ID and Charge ID are required');
         }
 
         // Simplistic check => If there's existing order ( possible dups )?
@@ -49,8 +47,7 @@ class ChargeOrderDuplicationPrevention
         // Subscription parent => Shared lock target
         $parent = $this->orders->findOneBy([
             'univa_pay_parent_subscription_id' => $subscriptionId,
-            'OrderStatus' =>
-            UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE,
+            'OrderStatus' => UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE,
         ]);
 
         if (!$parent) {
@@ -80,8 +77,8 @@ class ChargeOrderDuplicationPrevention
 
                 // Is subscription still active?
                 if (
-                    !$parent->getOrderStatus() ||
-                    (int) $parent->getOrderStatus()->getId()
+                    !$parent->getOrderStatus()
+                    || (int) $parent->getOrderStatus()->getId()
                     !== UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE
                 ) {
                     return [false, null];
@@ -90,12 +87,10 @@ class ChargeOrderDuplicationPrevention
                 $order = $create($parent);
 
                 if (
-                    !$order instanceof Order ||
-                    $order->getUnivapayChargeId() !== $chargeId
+                    !$order instanceof Order
+                    || $order->getUnivapayChargeId() !== $chargeId
                 ) {
-                    throw new \LogicException(
-                        'Created order has an unexpected Charge ID'
-                    );
+                    throw new \LogicException('Created order has an unexpected Charge ID');
                 }
 
                 return [true, $order];

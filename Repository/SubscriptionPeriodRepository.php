@@ -2,14 +2,14 @@
 
 namespace Plugin\UnivaPay\Repository;
 
-    use Eccube\Repository\AbstractRepository;
-    use Plugin\UnivaPay\Entity\SubscriptionPeriod;
-    use Symfony\Bridge\Doctrine\RegistryInterface;
+use Doctrine\Persistence\ManagerRegistry;
+use Eccube\Repository\AbstractRepository;
+use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 
-    class SubscriptionPeriodRepository extends AbstractRepository
+class SubscriptionPeriodRepository extends AbstractRepository
+{
+    public function __construct(ManagerRegistry $registry)
     {
-        public function __construct(RegistryInterface $registry)
-        {
-            parent::__construct($registry, SubscriptionPeriod::class);
-        }
+        parent::__construct($registry, SubscriptionPeriod::class);
     }
+}

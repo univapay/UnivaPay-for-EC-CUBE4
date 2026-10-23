@@ -7,7 +7,7 @@ use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -15,7 +15,7 @@ use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 class GuestCheckoutEventListener implements EventSubscriberInterface
 {
-    const GUEST_CHECKOUT_ROUTES = [
+    public const GUEST_CHECKOUT_ROUTES = [
         'shopping',
         'shopping_nonmember',
         'shopping_customer',
@@ -37,7 +37,7 @@ class GuestCheckoutEventListener implements EventSubscriberInterface
         TokenStorageInterface $tokenStorage,
         AuthorizationCheckerInterface $authorizationChecker,
         RouterInterface $router,
-        SubscriptionCartChecker $subscriptionCartChecker
+        SubscriptionCartChecker $subscriptionCartChecker,
     ) {
         $this->tokenStorage = $tokenStorage;
         $this->authorizationChecker = $authorizationChecker;
@@ -45,16 +45,16 @@ class GuestCheckoutEventListener implements EventSubscriberInterface
         $this->subscriptionCartChecker = $subscriptionCartChecker;
     }
 
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [
             KernelEvents::REQUEST => ['onKernelRequest', 0],
         ];
     }
 
-    public function onKernelRequest(GetResponseEvent $event)
+    public function onKernelRequest(RequestEvent $event)
     {
-        if (!$event->isMasterRequest()) {
+        if (!$event->isMainRequest()) {
             return;
         }
 

@@ -1,6 +1,6 @@
 {
   "name": "univapay/univapay-for-ec-cube4",
-  "version": "40.1.0.0",
+  "version": "43.1.0.0",
   "description": "UnivaPay for EC-CUBE4",
   "type": "eccube-plugin",
   "extra": {
