@@ -2,52 +2,35 @@
 
 namespace Plugin\UnivaPay\Controller\Api;
 
-use Doctrine\DBAL\LockMode;
 use Eccube\Controller\AbstractController;
 use Eccube\Entity\Master\OrderStatus;
-use Eccube\Entity\Order;
 use Eccube\Repository\Master\OrderStatusRepository;
 use Eccube\Repository\OrderRepository;
 use Eccube\Service\MailService;
 use Eccube\Service\OrderHelper;
 use Eccube\Service\PurchaseFlow\Processor\AddPointProcessor;
-use Eccube\Service\PurchaseFlow\Processor\CustomerPurchaseInfoProcessor;
 use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
 use Eccube\Service\PurchaseFlow\PurchaseContext;
+use Eccube\Service\PurchaseFlow\PurchaseFlow;
 use Plugin\UnivaPay\Entity\Config;
-use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Repository\ConfigRepository;
+use Plugin\UnivaPay\Util\ChargeOrderDuplicationPrevention;
 use Plugin\UnivaPay\Util\OrderCopier;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
 
 class SubscriptionController extends AbstractController
 {
-    /** @var AddPointProcessor */
     private $addPointProcessor;
-
-    /** @var ConfigRepository */
     private $Config;
-
-    /** @var OrderRepository */
     private $Order;
-
-    /** @var OrderStatusRepository */
     private $orderStatusRepository;
-
-    /** @var CustomerPurchaseInfoProcessor */
-    private $customerPurchaseInfoProcessor;
-
-    /** @var OrderHelper */
+    private $purchaseFlow;
     private $orderHelper;
-
-    /** @var OrderNoProcessor */
     private $orderNoProcessor;
-
-    /** @var MailService */
     private $mailService;
 
     public function __construct(
@@ -55,63 +38,184 @@ class SubscriptionController extends AbstractController
         ConfigRepository $configRepository,
         OrderRepository $orderRepository,
         OrderStatusRepository $orderStatusRepository,
-        CustomerPurchaseInfoProcessor $customerPurchaseInfoProcessor,
+        PurchaseFlow $shoppingPurchaseFlow,
         OrderHelper $orderHelper,
         OrderNoProcessor $orderNoProcessor,
-        MailService $mailService
+        MailService $mailService,
     ) {
+        $this->addPointProcessor = $addPointProcessor;
         $this->Config = $configRepository;
         $this->Order = $orderRepository;
         $this->orderStatusRepository = $orderStatusRepository;
-        $this->customerPurchaseInfoProcessor = $customerPurchaseInfoProcessor;
+        $this->purchaseFlow = $shoppingPurchaseFlow;
         $this->orderHelper = $orderHelper;
         $this->orderNoProcessor = $orderNoProcessor;
-        $this->addPointProcessor = $addPointProcessor;
         $this->mailService = $mailService;
     }
 
     /**
-     * subscription webhook action
+     * Subscription webhook action.
      *
      * @Route("/univapay/hook", name="univa_pay_hook", methods={"POST"})
      */
     public function hook(Request $request)
     {
-        $config = $this->Config->findOneById(1);
+        try {
+            $config = $this->Config->get(1);
 
-        if (!$this->isHeaderAuthValid($request, $config)) {
-            return new Response(trans('univa_pay.error.webhook.authorization'), 401);
+            if (!$config) {
+                UnivaPayLogger::get()->error(
+                    'Webhook ignored: UnivaPay config not found'
+                );
+
+                return new Response('Acknowledged', 200);
+            }
+
+            if (!$this->isHeaderAuthValid($request, $config)) {
+                UnivaPayLogger::get()->warning(
+                    'Webhook ignored: invalid authorization'
+                );
+
+                return new Response('Acknowledged', 200);
+            }
+
+            $data = json_decode($request->getContent());
+
+            if (
+                !is_object($data)
+                || !isset($data->event)
+                || !is_string($data->event)
+            ) {
+                return new Response('Ignored: invalid payload', 200);
+            }
+
+            // This controller handles only subscription payment events.
+            if (!in_array(
+                $data->event,
+                ['subscription_payment', 'subscription_failure'],
+                true
+            )) {
+                return new Response('Ignored: unrelated event', 200);
+            }
+
+            if (
+                !isset($data->data->id, $data->data->amount)
+                || !is_string($data->data->id)
+                || $data->data->id === ''
+                || !is_int($data->data->amount)
+                || $data->data->amount < 0
+            ) {
+                UnivaPayLogger::get()->warning(
+                    'Webhook ignored: invalid subscription payload'
+                );
+
+                return new Response('Acknowledged', 200);
+            }
+
+            $sdk = $this->createSdk($config);
+
+            // Preserve the plugin's existing charge retrieval behavior.
+            $charge = $sdk->getLatestChargeBySubscriptionId(
+                $data->data->id
+            );
+
+            if (!$charge || !$charge->getId()) {
+                UnivaPayLogger::get()->warning(
+                    'Subscription charge not found',
+                    ['subscription_id' => $data->data->id]
+                );
+
+                return new Response('Acknowledged', 200);
+            }
+
+            if ($charge->getSubscriptionId() !== $data->data->id) {
+                UnivaPayLogger::get()->warning(
+                    'Charge/subscription mismatch',
+                    [
+                        'subscription_id' => $data->data->id,
+                        'charge_id' => $charge->getId(),
+                    ]
+                );
+
+                return new Response('Acknowledged', 200);
+            }
+
+            // One shared guard for subscription order creation.
+            $guard = new ChargeOrderDuplicationPrevention(
+                $this->entityManager,
+                $this->Order
+            );
+
+            list($created, $order) = $guard->createOnce(
+                $data->data->id,
+                $charge->getId(),
+                function (Order $parent) use ($data, $charge) {
+                    return $this->createOrder(
+                        $parent,
+                        $data,
+                        $charge,
+                        $data->event
+                    );
+                }
+            );
+
+            if (!$created) {
+                if (!$order) {
+                    UnivaPayLogger::get()->warning(
+                        'Subscription parent not found or inactive',
+                        [
+                            'subscription_id' => $data->data->id,
+                            'charge_id' => $charge->getId(),
+                        ]
+                    );
+                }
+
+                return new Response(
+                    $order ? 'Order already created' : 'Acknowledged',
+                    200
+                );
+            }
+        } catch (\Throwable $e) {
+            // Intentionally acknowledge the webhook.
+            // The error must still be logged for store reconciliation.
+            UnivaPayLogger::get()->error(
+                'Subscription webhook processing failed',
+                ['error' => $e->getMessage()]
+            );
+
+            return new Response('Acknowledged', 200);
         }
 
-        $data = json_decode($request->getContent());
-        if (!in_array($data->event, ['subscription_payment', 'subscription_failure'], true)) {
-            return new Response();
+        // The order has now been committed.
+        // Do not keep the database lock during external operations.
+        try {
+            $sdk->updateChargeMetaData($order, $charge);
+        } catch (\Throwable $e) {
+            UnivaPayLogger::get()->warning(
+                'Charge metadata update failed',
+                [
+                    'order_id' => $order->getId(),
+                    'error' => $e->getMessage(),
+                ]
+            );
         }
 
-        $util = new SDK($config);
-
-        $charge = $util->getLatestChargeBySubscriptionId($data->data->id);
-        if (is_null($charge)) {
-            return new Response('Charge not found', 404);
+        // Only the request that created the order sends its mail.
+        if ($data->event === 'subscription_payment') {
+            try {
+                $this->mailService->sendOrderMail($order);
+            } catch (\Throwable $e) {
+                UnivaPayLogger::get()->error(
+                    'Subscription order mail failed',
+                    [
+                        'order_id' => $order->getId(),
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }
         }
 
-        if ($this->Order->findOneBy(['univa_pay_charge_id' => $charge->getId()])) {
-            return new Response('Order already created', 200);
-        }
-
-        $subscriptionOrder = $this->Order->findOneBy([
-            'univa_pay_parent_subscription_id' => $data->data->id,
-            'OrderStatus' => UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE,
-        ]);
-
-        if (is_null($subscriptionOrder)) {
-            return new Response(trans('univa_pay.error.webhook.subscription.not_found'), 404);
-        }
-
-        $order = $this->createOrder($subscriptionOrder, $data, $charge, $data->event === 'subscription_payment');
-        $util->updateChargeMetaData($order, $charge);
-
-        return new Response('successfully accepted', 201);
+        return new Response('Successfully accepted', 200);
     }
 
     private function isHeaderAuthValid(Request $request, Config $config): bool
@@ -120,7 +224,7 @@ class SubscriptionController extends AbstractController
             return true;
         }
 
-        $authHeader = $request->headers->get('Authorization');
+        $authHeader = $request->headers->get('Authorization') || $request->headers->get('authorization');
 
         if ($config->getWebhookAuth() !== $authHeader) {
             UnivaPayLogger::get()->info('Invalid webhook authorization attempt', ['provided' => $authHeader]);
@@ -132,66 +236,89 @@ class SubscriptionController extends AbstractController
     }
 
     /**
-     * Copies the parent order into a renewal order. A failed renewal is recorded as a cancelled order without
-     * touching stock or customer purchase totals.
+     * Allows SDK replacement in tests without a live connection.
      */
-    private function createOrder(Order $existOrder, $data, $charge, bool $paid): Order
+    protected function createSdk(Config $config): SDK
     {
-        $newOrder = OrderCopier::copy($existOrder);
-        $newOrder->setUnivapayChargeId($charge->id);
-        // Renewal amount can differ from the first charge, so derive subtotal from it.
-        $newOrder->setSubtotal($existOrder->getSubtotal() - $existOrder->getTotal() + $data->data->amount - $existOrder->getDiscount());
-        $newOrder->setDiscount(0);
-        $newOrder->setTotal($data->data->amount);
-        $newOrder->setPaymentTotal($data->data->amount);
-        $newOrder->setOrderDate(new \DateTime());
-        $newOrder->setPaymentDate(new \DateTime());
-        $newOrder->setPreOrderId($this->orderHelper->createPreOrderId());
-
-        $purchaseContext = new PurchaseContext($newOrder, $newOrder->getCustomer());
-        // EC-CUBE 4.0 needs add point recalculated before the order is saved.
-        $this->addPointProcessor->validate($newOrder, $purchaseContext);
-        if ($paid) {
-            $this->reduceStock($newOrder);
-            $this->customerPurchaseInfoProcessor->commit($newOrder, $purchaseContext);
-        }
-        $this->entityManager->persist($newOrder);
-        // Order number formats may use the order id, so number it after the first flush.
-        $this->entityManager->flush();
-        $this->orderNoProcessor->process($newOrder, $purchaseContext);
-        // Set directly, not via the state machine: its pay/cancel listeners would capture/refund a charge UnivaPay already settled.
-        $newOrder->setOrderStatus($this->orderStatusRepository->find($paid ? OrderStatus::PAID : OrderStatus::CANCEL));
-        $this->entityManager->flush();
-        if ($paid) {
-            $this->mailService->sendOrderMail($newOrder);
-        }
-
-        return $newOrder;
+        return new SDK($config);
     }
 
     /**
-     * Same as StockReduceProcessor but allows negative stock, since the renewal is already charged.
-     * A subscription order holds one product (CartValidationEventListener).
+     * Create a recurring order using EC-CUBE's existing purchase flow.
      */
-    private function reduceStock(Order $order)
-    {
-        $item = $order->getProductOrderItems()[0];
-        $ProductClass = $item->getProductClass();
-        if ($ProductClass->isStockUnlimited()) {
-            return;
-        }
-        $ProductStock = $ProductClass->getProductStock();
-        $this->entityManager->lock($ProductStock, LockMode::PESSIMISTIC_WRITE);
-        $this->entityManager->refresh($ProductStock);
-        $stock = $ProductStock->getStock() - $item->getQuantity();
-        $ProductStock->setStock($stock);
-        $ProductClass->setStock($stock);
-        if ($stock < 0) {
-            UnivaPayLogger::get()->warning('Subscription renewal reduced stock below zero', [
-                'parent_subscription_id' => $order->getUnivapayParentSubscriptionId(),
-                'product_class_id' => $ProductClass->getId(),
-                'stock' => $stock,
-            ]);
-        }
+    private function createOrder(
+        Order $existingOrder,
+        $data,
+        $charge,
+        string $event,
+    ): Order {
+        $newOrder = OrderCopier::copy($existingOrder);
+
+        // Current payment Charge ID.
+        $newOrder->setUnivapayChargeId($charge->getId());
+
+        // Calculate subtotal from the current payment amount.
+        $newSubtotal = $existingOrder->getSubtotal()
+            - $existingOrder->getTotal()
+            + $data->data->amount
+            - $existingOrder->getDiscount();
+
+        $newOrder->setSubtotal($newSubtotal);
+
+        // Disable previous discount.
+        $newOrder->setDiscount(0);
+
+        // Update amounts for this recurring payment.
+        $newOrder->setTotal($data->data->amount);
+        $newOrder->setPaymentTotal($data->data->amount);
+        $newOrder->setPaymentDate(new \DateTime());
+
+        $purchaseContext = new PurchaseContext(
+            $newOrder,
+            $newOrder->getCustomer()
+        );
+
+        // Existing EC-CUBE purchase processing.
+        $this->addPointProcessor->validate(
+            $newOrder,
+            $purchaseContext
+        );
+
+        $newOrder->setPreOrderId(
+            $this->orderHelper->createPreOrderId()
+        );
+
+        $this->purchaseFlow->prepare(
+            $newOrder,
+            $purchaseContext
+        );
+
+        $this->purchaseFlow->commit(
+            $newOrder,
+            $purchaseContext
+        );
+
+        $this->entityManager->persist($newOrder);
+        $this->entityManager->flush();
+
+        // Regenerate the order number.
+        $this->orderNoProcessor->process(
+            $newOrder,
+            $purchaseContext
+        );
+
+        $this->entityManager->flush();
+
+        // Set final status based on payment event.
+        $status = $this->orderStatusRepository->find(
+            $event === 'subscription_payment'
+                ? OrderStatus::PAID
+                : OrderStatus::CANCEL
+        );
+
+        $newOrder->setOrderStatus($status);
+        $this->entityManager->flush();
+
+        return $newOrder;
     }
 }

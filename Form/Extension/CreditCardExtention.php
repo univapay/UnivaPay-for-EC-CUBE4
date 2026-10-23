@@ -15,7 +15,7 @@ use Symfony\Component\Form\FormEvents;
  */
 class CreditCardExtention extends AbstractTypeExtension
 {
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->addEventListener(FormEvents::POST_SET_DATA, function (FormEvent $event) {
             /** @var Order $data */
@@ -31,14 +31,6 @@ class CreditCardExtention extends AbstractTypeExtension
                 'mapped' => true,
             ]);
         });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getExtendedType()
-    {
-        return OrderType::class;
     }
 
     public static function getExtendedTypes(): iterable

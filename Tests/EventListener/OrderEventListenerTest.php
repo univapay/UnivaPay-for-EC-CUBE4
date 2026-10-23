@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Plugin\UnivaPay\EventListener\OrderEventListener;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Service\Method\CreditCard;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Workflow\Event\Event;
 
 class OrderEventListenerTest extends TestCase
@@ -43,7 +43,7 @@ class OrderEventListenerTest extends TestCase
 
     public function testPayAndCancelSkipUnivaPayOrderWithoutCharge()
     {
-        $listener = new OrderEventListener($this->configRepositoryNeverCalled(), $this->createMock(SessionInterface::class));
+        $listener = new OrderEventListener($this->configRepositoryNeverCalled(), $this->createMock(RequestStack::class));
         $event = $this->createEvent($this->univaPayOrderWithoutIds());
 
         $listener->onPayOrder($event);

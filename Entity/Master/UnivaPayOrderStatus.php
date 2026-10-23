@@ -11,7 +11,7 @@ use Eccube\Entity\Master\OrderStatus;
  */
 class UnivaPayOrderStatus extends OrderStatus
 {
-    const UNIVAPAY_SUBSCRIPTION_ACTIVE = 100;
-    const UNIVAPAY_SUBSCRIPTION_CANCEL = 101;
-    const UNIVAPAY_SUBSCRIPTION_SUSPEND = 102;
+    const UNIVAPAY_SUBSCRIPTION_ACTIVE = 8001;
+    const UNIVAPAY_SUBSCRIPTION_CANCEL = 8002;
+    const UNIVAPAY_SUBSCRIPTION_SUSPEND = 8003;
 }

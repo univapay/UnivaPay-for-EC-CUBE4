@@ -2,13 +2,13 @@
 
 namespace Plugin\UnivaPay\Repository;
 
+use Doctrine\Persistence\ManagerRegistry;
 use Eccube\Repository\AbstractRepository;
 use Plugin\UnivaPay\Entity\Config;
-use Symfony\Bridge\Doctrine\RegistryInterface;
 
 class ConfigRepository extends AbstractRepository
 {
-    public function __construct(RegistryInterface $registry)
+    public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Config::class);
     }

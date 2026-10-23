@@ -5,30 +5,29 @@ namespace Plugin\UnivaPay\EventListener;
 use Eccube\Event\EccubeEvents;
 use Eccube\Event\EventArgs;
 use Eccube\Repository\OrderRepository;
-use Exception;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 class WithdrawEventListener implements EventSubscriberInterface
 {
     private $orderRepository;
     private $tokenStorage;
-    private $session;
+    private $requestStack;
 
     public function __construct(
         OrderRepository $orderRepository,
         TokenStorageInterface $tokenStorage,
-        SessionInterface $session
+        RequestStack $requestStack,
     ) {
         $this->orderRepository = $orderRepository;
         $this->tokenStorage = $tokenStorage;
-        $this->session = $session;
+        $this->requestStack = $requestStack;
     }
 
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [
             EccubeEvents::FRONT_MYPAGE_WITHDRAW_INDEX_INITIALIZE => 'onCustomerWithdrawInitialize',
@@ -56,7 +55,7 @@ class WithdrawEventListener implements EventSubscriberInterface
         ]);
 
         if (count($activeSubscriptions) > 0) {
-            $this->session->getFlashBag()->add('eccube.front.warning', trans('univa_pay.error.customer.withdraw.has_subscription'));
+            $this->requestStack->getSession()->getFlashBag()->add('eccube.front.warning', trans('univa_pay.error.customer.withdraw.has_subscription'));
         }
     }
 
@@ -71,8 +70,8 @@ class WithdrawEventListener implements EventSubscriberInterface
 
         if (count($activeSubscriptions) > 0) {
             UnivaPayLogger::get()->info('Customer: '.$customer->getId().' has active subscriptions');
-            $this->session->getFlashBag()->add('eccube.front.error', trans('univa_pay.error.customer.withdraw.has_subscription'));
-            throw new Exception(trans('univa_pay.error.customer.withdraw.has_subscription'));
+            $this->requestStack->getSession()->getFlashBag()->add('eccube.front.error', trans('univa_pay.error.customer.withdraw.has_subscription'));
+            throw new \Exception(trans('univa_pay.error.customer.withdraw.has_subscription'));
         }
     }
 }

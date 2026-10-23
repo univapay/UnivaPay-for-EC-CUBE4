@@ -6,11 +6,10 @@ use Eccube\Controller\AbstractController;
 use Eccube\Entity\Order;
 use Eccube\Repository\Master\OrderStatusRepository;
 use Eccube\Service\OrderStateMachine;
-use Exception;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Routing\Annotation\Route;
 
 class SubscriptionController extends AbstractController
 {
@@ -22,7 +21,7 @@ class SubscriptionController extends AbstractController
 
     public function __construct(
         OrderStatusRepository $orderStatusRepository,
-        OrderStateMachine $orderStateMachine
+        OrderStateMachine $orderStateMachine,
     ) {
         $this->orderStatusRepository = $orderStatusRepository;
         $this->orderStateMachine = $orderStateMachine;
@@ -44,7 +43,7 @@ class SubscriptionController extends AbstractController
             try {
                 $this->orderStateMachine->apply($order, $status);
                 $this->entityManager->flush();
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 UnivaPayLogger::get()->info('Failed to cancel subscription', [
                     'order_id' => $order->getId(),
                     'error' => $e->getMessage(),
