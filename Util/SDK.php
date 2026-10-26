@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * This file is part of EC-CUBE
+ *
+ * Copyright(c) EC-CUBE CO.,LTD. All Rights Reserved.
+ *
+ * http://www.ec-cube.co.jp/
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\UnivaPay\Util;
 
 require_once __DIR__.'/../Resource/autoload.php';
@@ -90,7 +101,7 @@ class SDK
             return null;
         }
 
-        return rtrim($this->customerUrl, '/') . '/stores/' . $storeId . '?' . http_build_query([
+        return rtrim($this->customerUrl, '/').'/stores/'.$storeId.'?'.http_build_query([
             'emailAddress' => $email,
             'subscriptionId' => $subscriptionId,
         ]);

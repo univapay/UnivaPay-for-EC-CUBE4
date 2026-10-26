@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * This file is part of EC-CUBE
+ *
+ * Copyright(c) EC-CUBE CO.,LTD. All Rights Reserved.
+ *
+ * http://www.ec-cube.co.jp/
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\UnivaPay\Util;
 
 use Doctrine\ORM\EntityManagerInterface;
@@ -9,7 +20,6 @@ use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use UnivaPay\Models\Subscription;
 use UnivaPay\Models\SubscriptionStatus;
-
 
 // Does 3 things :
 //   1. Reads the billing cycle from the existing EC-CUBE order items
@@ -39,10 +49,11 @@ class SubscriptionMetadata
                 : null;
 
             if (
-                $period &&
-                $period->getId() > SubscriptionPeriod::NON_SUBSCRIPTION
+                $period
+                && $period->getId() > SubscriptionPeriod::NON_SUBSCRIPTION
             ) {
                 $order->setUnivapaySubscriptionPeriod($period->getId());
+
                 return;
             }
         }
@@ -50,7 +61,7 @@ class SubscriptionMetadata
 
     public static function update(
         Order $order,
-        Subscription $subscription
+        Subscription $subscription,
     ): void {
         $period = self::PERIODS[$subscription->getPeriod() ?? ''] ?? null;
 
@@ -79,15 +90,16 @@ class SubscriptionMetadata
     public static function backfill(
         EntityManagerInterface $em,
         Config $config,
-        ?callable $fetch = null
+        ?callable $fetch = null,
     ): void {
         if (
-            !$fetch &&
-            (!$config->getAppId() || !$config->getAppSecret())
+            !$fetch
+            && (!$config->getAppId() || !$config->getAppSecret())
         ) {
             UnivaPayLogger::get()->warning(
                 'Subscription list backfill: API credentials not configured'
             );
+
             return;
         }
 
@@ -126,9 +138,7 @@ class SubscriptionMetadata
                 }
 
                 if (!$subscription instanceof Subscription) {
-                    throw new \UnexpectedValueException(
-                        'Unexpected subscription API response'
-                    );
+                    throw new \UnexpectedValueException('Unexpected subscription API response');
                 }
 
                 $period = self::PERIODS[
@@ -136,9 +146,7 @@ class SubscriptionMetadata
                 ] ?? null;
 
                 if ($period === null) {
-                    throw new \UnexpectedValueException(
-                        'Unknown subscription period'
-                    );
+                    throw new \UnexpectedValueException('Unknown subscription period');
                 }
 
                 $nextPayment = $subscription->getNextPayment();
@@ -166,8 +174,7 @@ class SubscriptionMetadata
                 UnivaPayLogger::get()->warning(
                     'Subscription list backfill failed',
                     [
-                        'subscription_id' =>
-                            $parent['univa_pay_parent_subscription_id'],
+                        'subscription_id' => $parent['univa_pay_parent_subscription_id'],
                         'error' => $e->getMessage(),
                     ]
                 );

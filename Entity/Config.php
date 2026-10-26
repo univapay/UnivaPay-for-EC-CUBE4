@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * This file is part of EC-CUBE
+ *
+ * Copyright(c) EC-CUBE CO.,LTD. All Rights Reserved.
+ *
+ * http://www.ec-cube.co.jp/
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\UnivaPay\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -67,7 +78,7 @@ class Config
     private $webhook_auth;
 
     /**
-     * @var boolean
+     * @var bool
      *
      * @ORM\Column(name="capture", type="boolean", nullable=true)
      */
@@ -200,7 +211,7 @@ class Config
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function getCapture()
     {
@@ -208,7 +219,7 @@ class Config
     }
 
     /**
-     * @param boolean $capture
+     * @param bool $capture
      *
      * @return $this;
      */

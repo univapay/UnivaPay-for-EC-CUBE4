@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * This file is part of EC-CUBE
+ *
+ * Copyright(c) EC-CUBE CO.,LTD. All Rights Reserved.
+ *
+ * http://www.ec-cube.co.jp/
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\UnivaPay\Controller\Admin;
 
 use Eccube\Controller\AbstractController;
@@ -34,7 +45,7 @@ class SubscriptionListController extends AbstractController
     public function __construct(
         OrderRepository $orders,
         SubscriptionPeriodRepository $periods,
-        ConfigRepository $configs
+        ConfigRepository $configs,
     ) {
         $this->orders = $orders;
         $this->periods = $periods;
@@ -43,11 +54,12 @@ class SubscriptionListController extends AbstractController
 
     /**
      * @Route("/%eccube_admin_route%/order/univapay/subscriptions", name="univa_pay_admin_subscriptions", methods={"GET"})
+     *
      * @Template("@UnivaPay/admin/subscription_list.twig")
      */
     public function index(
         Request $request,
-        PaginatorInterface $paginator
+        PaginatorInterface $paginator,
     ) {
         $status = (int) $request->query->get('status', 0);
         $period = (int) $request->query->get('period', 0);
@@ -107,14 +119,14 @@ class SubscriptionListController extends AbstractController
                 $qb->setParameter('customerId', (int) $keyword);
             }
 
-            $qb->andWhere('(' . implode(' OR ', $parts) . ')')
+            $qb->andWhere('('.implode(' OR ', $parts).')')
                 ->setParameter(
                     'keyword',
-                    '%' . str_replace(
+                    '%'.str_replace(
                         ['%', '_'],
                         ['\\%', '\\_'],
                         $keyword
-                    ) . '%'
+                    ).'%'
                 );
         }
 
@@ -253,9 +265,9 @@ class SubscriptionListController extends AbstractController
         $order = $this->orders->find($id);
 
         if (
-            !$order ||
-            !$order->isUnivapaySubscriptionParent() ||
-            $order->getUnivapayChargeId()
+            !$order
+            || !$order->isUnivapaySubscriptionParent()
+            || $order->getUnivapayChargeId()
         ) {
             throw new NotFoundHttpException();
         }
@@ -264,9 +276,7 @@ class SubscriptionListController extends AbstractController
             $config = $this->configs->findOneById(1);
 
             if (!$config) {
-                throw new \RuntimeException(
-                    'UnivaPay configuration missing'
-                );
+                throw new \RuntimeException('UnivaPay configuration missing');
             }
 
             $sdk = new SDK($config);

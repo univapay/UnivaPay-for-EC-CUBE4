@@ -1,27 +1,28 @@
 <?php
 
+/*
+ * This file is part of EC-CUBE
+ *
+ * Copyright(c) EC-CUBE CO.,LTD. All Rights Reserved.
+ *
+ * http://www.ec-cube.co.jp/
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\UnivaPay\Controller\Api;
 
 use Eccube\Controller\AbstractController;
 use Eccube\Entity\Order;
-use Eccube\Entity\Master\OrderStatus;
-use Eccube\Repository\Master\OrderStatusRepository;
 use Eccube\Repository\OrderRepository;
 use Eccube\Service\MailService;
-use Eccube\Service\OrderHelper;
-use Eccube\Service\PurchaseFlow\Processor\AddPointProcessor;
-use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
-use Eccube\Service\PurchaseFlow\PurchaseContext;
-use Eccube\Service\PurchaseFlow\PurchaseFlow;
 use Plugin\UnivaPay\Entity\Config;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\ChargeOrderDuplicationPrevention;
-use Plugin\UnivaPay\Util\OrderCopier;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\SubscriptionMetadata;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
-use Plugin\UnivaPay\Util\ChargeOrderDuplicationPrevention;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -35,7 +36,7 @@ class SubscriptionController extends AbstractController
     public function __construct(
         ConfigRepository $configRepository,
         OrderRepository $orderRepository,
-        MailService $mailService
+        MailService $mailService,
     ) {
         $this->addPointProcessor = $addPointProcessor;
         $this->Config = $configRepository;
@@ -60,16 +61,6 @@ class SubscriptionController extends AbstractController
 
                 return new Response('Acknowledged', 200);
             }
-        try {
-            $config = $this->Config->get(1);
-
-            if (!$config) {
-                UnivaPayLogger::get()->error(
-                    'Webhook ignored: UnivaPay config not found'
-                );
-
-                return new Response('Acknowledged', 200);
-            }
 
             if (!$this->isHeaderAuthValid($request, $config)) {
                 UnivaPayLogger::get()->warning(
@@ -82,9 +73,9 @@ class SubscriptionController extends AbstractController
             $data = json_decode($request->getContent());
 
             if (
-                !is_object($data) ||
-                !isset($data->event) ||
-                !is_string($data->event)
+                !is_object($data)
+                || !isset($data->event)
+                || !is_string($data->event)
             ) {
                 return new Response('Ignored: invalid payload', 200);
             }
@@ -99,11 +90,11 @@ class SubscriptionController extends AbstractController
             }
 
             if (
-                !isset($data->data->id, $data->data->amount) ||
-                !is_string($data->data->id) ||
-                $data->data->id === '' ||
-                !is_int($data->data->amount) ||
-                $data->data->amount < 0
+                !isset($data->data->id, $data->data->amount)
+                || !is_string($data->data->id)
+                || $data->data->id === ''
+                || !is_int($data->data->amount)
+                || $data->data->amount < 0
             ) {
                 UnivaPayLogger::get()->warning(
                     'Webhook ignored: invalid subscription payload'
@@ -264,6 +255,7 @@ class SubscriptionController extends AbstractController
 
         return true;
     }
+
     /**
      * Allows SDK replacement in tests without a live connection.
      */

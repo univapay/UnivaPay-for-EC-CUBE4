@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * This file is part of EC-CUBE
+ *
+ * Copyright(c) EC-CUBE CO.,LTD. All Rights Reserved.
+ *
+ * http://www.ec-cube.co.jp/
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\UnivaPay\Tests;
 
 use Eccube\Entity\Delivery;
@@ -9,14 +20,14 @@ use Eccube\Entity\Payment;
 use Eccube\Entity\PaymentOption;
 use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
 use Eccube\Tests\EccubeTestCase;
+use Plugin\UnivaPay\Entity\Config;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
+use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use Plugin\UnivaPay\PluginManager;
 use Plugin\UnivaPay\Service\Method\CreditCard;
 use Plugin\UnivaPay\Util\Constants;
 use Plugin\UnivaPay\Util\LegacySubscriptionMigration;
 use Plugin\UnivaPay\Util\SubscriptionMetadata;
-use Plugin\UnivaPay\Entity\Config;
-use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use UnivaPay\Models\Subscription;
 use UnivaPay\Models\SubscriptionNextPayment;
 use UnivaPay\Models\SubscriptionStatus;
@@ -160,8 +171,6 @@ class SubscriptionMigrationTest extends EccubeTestCase
         $this->assertCount($orderCount, $this->entityManager->getRepository(Order::class)->findAll());
     }
 
-
-
     public function testBackfillsOnlyParentsAfterLegacyMigration(): void
     {
         $this->createLegacyOrder(
@@ -245,7 +254,6 @@ class SubscriptionMigrationTest extends EccubeTestCase
             }
         }
     }
-
 
     private function migrate()
     {

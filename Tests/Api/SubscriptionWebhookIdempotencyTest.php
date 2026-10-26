@@ -1,17 +1,22 @@
 <?php
 
+/*
+ * This file is part of EC-CUBE
+ *
+ * Copyright(c) EC-CUBE CO.,LTD. All Rights Reserved.
+ *
+ * http://www.ec-cube.co.jp/
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\UnivaPay\Tests\Controller\Api;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Eccube\Entity\Order;
-use Eccube\Repository\Master\OrderStatusRepository;
 use Eccube\Repository\OrderRepository;
 use Eccube\Service\MailService;
-use Eccube\Service\OrderHelper;
-use Eccube\Service\OrderStateMachine;
-use Eccube\Service\PurchaseFlow\Processor\AddPointProcessor;
-use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
-use Eccube\Service\PurchaseFlow\PurchaseFlow;
 use PHPUnit\Framework\TestCase;
 use Plugin\UnivaPay\Controller\Api\SubscriptionController;
 use Plugin\UnivaPay\Entity\Config;
@@ -40,7 +45,7 @@ class SubscriptionWebhookIdempotencyTest extends TestCase
         $sdk->expects($this->once())
             ->method('getLatestChargeBySubscriptionId')
             ->with('subscriptionId')
-            ->willReturn(new class() {
+            ->willReturn(new class {
                 public function getId()
                 {
                     return 'subscriptionAssociatedChargeId';
@@ -104,7 +109,7 @@ class SubscriptionWebhookIdempotencyTest extends TestCase
 
     private function controller(
         OrderRepository $orders,
-        MailService $mail
+        MailService $mail,
     ): SubscriptionController {
         $configs = $this->createMock(ConfigRepository::class);
 

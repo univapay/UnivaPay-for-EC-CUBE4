@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * This file is part of EC-CUBE
+ *
+ * Copyright(c) EC-CUBE CO.,LTD. All Rights Reserved.
+ *
+ * http://www.ec-cube.co.jp/
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\UnivaPay\Tests\Util;
 
 use Doctrine\DBAL\LockMode;
@@ -10,7 +21,6 @@ use Eccube\Repository\OrderRepository;
 use PHPUnit\Framework\TestCase;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Util\ChargeOrderDuplicationPrevention;
-use \Plugin\UnivaPay\Entity\OrderTrait;
 
 class ChargeOrderDuplicationPreventionTest extends TestCase
 {
@@ -268,7 +278,7 @@ class ChargeOrderDuplicationPreventionTest extends TestCase
         $parent,
         array $chargeResults,
         $expectedQueries,
-        callable $beforeRecheck = null
+        ?callable $beforeRecheck = null,
     ): OrderRepository {
         $repository = $this->createMock(OrderRepository::class);
         $chargeLookups = 0;
@@ -297,8 +307,7 @@ class ChargeOrderDuplicationPreventionTest extends TestCase
 
                     $this->assertSame([
                         'univa_pay_parent_subscription_id' => 'subscriptionId',
-                        'OrderStatus' =>
-                        UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE,
+                        'OrderStatus' => UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE,
                     ], $criteria);
 
                     return $parent;
@@ -310,7 +319,7 @@ class ChargeOrderDuplicationPreventionTest extends TestCase
 
     private function transactionalEntityManager(
         Order $parent,
-        callable $onRefresh = null
+        ?callable $onRefresh = null,
     ): EntityManagerInterface {
         $em = $this->createMock(EntityManagerInterface::class);
 
@@ -349,6 +358,7 @@ class ChargeOrderDuplicationPreventionTest extends TestCase
 
         return $status;
     }
+
     // The duplication prevention guard only needs an Order that returns a particular Charge ID
     // Below is simplistic representation of such
     private function chargeOrder($chargeId): Order

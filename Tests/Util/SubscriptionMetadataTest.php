@@ -1,26 +1,37 @@
 <?php
 
+/*
+ * This file is part of EC-CUBE
+ *
+ * Copyright(c) EC-CUBE CO.,LTD. All Rights Reserved.
+ *
+ * http://www.ec-cube.co.jp/
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\UnivaPay\Tests\Util;
 
 use Eccube\Entity\Order;
 use PHPUnit\Framework\TestCase;
-use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use Plugin\UnivaPay\Entity\OrderTrait;
+use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use Plugin\UnivaPay\Util\SubscriptionMetadata;
 use UnivaPay\Models\Subscription;
 use UnivaPay\Models\SubscriptionNextPayment;
 use UnivaPay\Models\SubscriptionStatus;
 
-require_once __DIR__ . '/../../Resource/vendor/autoload.php';
+require_once __DIR__.'/../../Resource/vendor/autoload.php';
 class SubscriptionMetadataTest extends TestCase
 {
-
     private function newSubscriptionOrder(): Order
     {
-        return new class() extends Order {
+        return new class extends Order {
             use OrderTrait;
         };
     }
+
     public function testUpdatesPeriodAndDueDateFromSdk(): void
     {
         $order = $this->newSubscriptionOrder();
@@ -47,7 +58,7 @@ class SubscriptionMetadataTest extends TestCase
 
     /** @dataProvider stoppedStatuses */
     public function testStoppedSubscriptionsHaveNoUpcomingCharge(
-        string $status
+        string $status,
     ): void {
         $order = $this->newSubscriptionOrder();
 

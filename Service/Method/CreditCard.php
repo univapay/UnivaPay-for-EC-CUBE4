@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * This file is part of EC-CUBE
+ *
+ * Copyright(c) EC-CUBE CO.,LTD. All Rights Reserved.
+ *
+ * http://www.ec-cube.co.jp/
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\UnivaPay\Service\Method;
 
 use Eccube\Entity\Master\OrderStatus;
@@ -144,8 +155,7 @@ class CreditCard implements PaymentMethodInterface
                 UnivaPayLogger::get()->warning(
                     'Subscription metadata refresh failed at checkout',
                     [
-                        'subscription_id' =>
-                        $this->Order->getUnivapayParentSubscriptionId(),
+                        'subscription_id' => $this->Order->getUnivapayParentSubscriptionId(),
                         'error' => $e->getMessage(),
                     ]
                 );
