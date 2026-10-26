@@ -96,7 +96,7 @@ class SubscriptionMetadata
 
         $connection = $em->getConnection();
 
-        $parents = $connection->fetchAll(
+        $parents = $connection->fetchAllAssociative(
             'SELECT id, univa_pay_parent_subscription_id
              FROM dtb_order
              WHERE univa_pay_parent_subscription_id IS NOT NULL

@@ -9,7 +9,9 @@ use Eccube\Entity\Order;
 use Eccube\Repository\OrderRepository;
 use Eccube\Service\MailService;
 use Plugin\UnivaPay\Entity\Config;
+use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Repository\ConfigRepository;
+use Plugin\UnivaPay\Service\SubscriptionOrderCreator;
 use Plugin\UnivaPay\Util\ChargeOrderDuplicationPrevention;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\SubscriptionMetadata;
@@ -24,22 +26,25 @@ class SubscriptionController extends AbstractController
     private $Order;
     private $mailService;
 
+    private $orderCreator;
     public function __construct(
         ConfigRepository $configRepository,
         OrderRepository $orderRepository,
         MailService $mailService,
+        SubscriptionOrderCreator $orderCreator,
     ) {
-        $this->addPointProcessor = $addPointProcessor;
         $this->Config = $configRepository;
         $this->Order = $orderRepository;
         $this->mailService = $mailService;
+        $this->orderCreator = $orderCreator;
     }
 
-    /**
-     * Subscription webhook action.
-     *
-     * @Route("/univapay/hook", name="univa_pay_hook", methods={"POST"})
-     */
+    /** Subscription webhook action. */
+    #[Route(
+        path: "/univapay/hook",
+        name: "univa_pay_hook",
+        methods: ["POST"]
+    )]
     public function hook(Request $request)
     {
         try {

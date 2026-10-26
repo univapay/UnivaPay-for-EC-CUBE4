@@ -14,10 +14,10 @@ use Plugin\UnivaPay\Repository\SubscriptionPeriodRepository;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\SubscriptionMetadata;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Routing\Annotation\Route;
 
 // There would be an optional per-row refresh operation,
 // with CSRF protection, to retrieve the latest subscription schedule from UnivaPay
@@ -43,11 +43,12 @@ class SubscriptionListController extends AbstractController
         $this->configs = $configs;
     }
 
-    /**
-     * @Route("/%eccube_admin_route%/order/univapay/subscriptions", name="univa_pay_admin_subscriptions", methods={"GET"})
-     *
-     * @Template("@UnivaPay/admin/subscription_list.twig")
-     */
+    /** @Template("@UnivaPay/admin/subscription_list.twig") */
+    #[Route(
+        path: "/%eccube_admin_route%/order/univapay/subscriptions",
+        name: "univa_pay_admin_subscriptions",
+        methods: ["GET"]
+    )]
     public function index(
         Request $request,
         PaginatorInterface $paginator,
@@ -110,14 +111,14 @@ class SubscriptionListController extends AbstractController
                 $qb->setParameter('customerId', (int) $keyword);
             }
 
-            $qb->andWhere('('.implode(' OR ', $parts).')')
+            $qb->andWhere('(' . implode(' OR ', $parts) . ')')
                 ->setParameter(
                     'keyword',
-                    '%'.str_replace(
+                    '%' . str_replace(
                         ['%', '_'],
                         ['\\%', '\\_'],
                         $keyword
-                    ).'%'
+                    ) . '%'
                 );
         }
 
@@ -246,9 +247,12 @@ class SubscriptionListController extends AbstractController
         ];
     }
 
-    /**
-     * @Route("/%eccube_admin_route%/order/univapay/subscriptions/{id}/refresh", name="univa_pay_admin_subscription_refresh", requirements={"id"="\\d+"}, methods={"POST"})
-     */
+    #[Route(
+        path: "/%eccube_admin_route%/order/univapay/subscriptions/{id}/refresh",
+        name: "univa_pay_admin_subscription_refresh",
+        requirements: ["id" => "\\d+"],
+        methods: ["POST"]
+    )]
     public function refresh(Request $request, int $id)
     {
         $this->isTokenValid();

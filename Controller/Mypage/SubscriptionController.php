@@ -29,9 +29,12 @@ class SubscriptionController extends AbstractController
         $this->orderStateMachine = $orderStateMachine;
     }
 
-    /**
-     * @Route("/mypage/univapay/subscription/{id}/cancel", requirements={"id" = "\d+"}, name="univa_pay_cancel_subscription", methods={"PUT"})
-     */
+    #[Route(
+        path: "/mypage/univapay/subscription/{id}/cancel",
+        requirements: ["id" => "\\d+"],
+        name: "univa_pay_cancel_subscription",
+        methods: ["PUT"]
+    )]
     public function cancel(Order $order)
     {
         $this->isTokenValid();

@@ -13,7 +13,7 @@ use UnivaPay\Models\Subscription;
 use UnivaPay\Models\SubscriptionNextPayment;
 use UnivaPay\Models\SubscriptionStatus;
 
-require_once __DIR__.'/../../Resource/vendor/autoload.php';
+require_once __DIR__.'/../../Resource/autoload.php';
 class SubscriptionMetadataTest extends TestCase
 {
     private function newSubscriptionOrder(): Order

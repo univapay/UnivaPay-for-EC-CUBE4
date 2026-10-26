@@ -8,14 +8,20 @@ use Doctrine\ORM\EntityManagerInterface;
 use Eccube\Entity\Order;
 use Eccube\Repository\OrderRepository;
 use Eccube\Service\MailService;
+use Eccube\Tests\EccubeTestCase;
 use PHPUnit\Framework\TestCase;
 use Plugin\UnivaPay\Controller\Api\SubscriptionController;
 use Plugin\UnivaPay\Entity\Config;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\SDK;
 use Symfony\Component\HttpFoundation\Request;
+use Plugin\UnivaPay\Service\SubscriptionOrderCreator;
+use Doctrine\DBAL\LockMode;
+use Eccube\Entity\Master\OrderStatus;
+use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
+use UnivaPay\Models\Charge;
 
-class SubscriptionWebhookIdempotencyTest extends TestCase
+class SubscriptionWebhookIdempotencyTest extends EccubeTestCase
 {
     public function testRepeatNotificationDoesNotSendMailOrUpdateChargeMetadata()
     {
@@ -101,12 +107,18 @@ class SubscriptionWebhookIdempotencyTest extends TestCase
     private function controller(
         OrderRepository $orders,
         MailService $mail,
+        ?SubscriptionOrderCreator $creator = null,
+        ?EntityManagerInterface $em = null,
     ): SubscriptionController {
+        $config = new Config();
+        $config->setWebhookAuth(null);
+
         $configs = $this->createMock(ConfigRepository::class);
 
-        $configs->method('get')
+        $configs->expects($this->once())
+            ->method('get')
             ->with(1)
-            ->willReturn(new Config());
+            ->willReturn($config);
 
         $controller = $this->getMockBuilder(
             SubscriptionController::class
@@ -115,12 +127,15 @@ class SubscriptionWebhookIdempotencyTest extends TestCase
                 $configs,
                 $orders,
                 $mail,
+                $creator ?? $this->createMock(
+                    SubscriptionOrderCreator::class
+                ),
             ])
             ->setMethods(['createSdk'])
             ->getMock();
 
         $controller->setEntityManager(
-            $this->createMock(EntityManagerInterface::class)
+            $em ?? $this->createMock(EntityManagerInterface::class)
         );
 
         return $controller;
