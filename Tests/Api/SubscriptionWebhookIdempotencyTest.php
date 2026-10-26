@@ -116,15 +116,9 @@ class SubscriptionWebhookIdempotencyTest extends TestCase
             SubscriptionController::class
         )
             ->setConstructorArgs([
-                $this->createMock(AddPointProcessor::class),
                 $configs,
                 $orders,
-                $this->createMock(OrderStatusRepository::class),
-                $this->createMock(PurchaseFlow::class),
-                $this->createMock(OrderHelper::class),
-                $this->createMock(OrderNoProcessor::class),
                 $mail,
-                $this->createMock(OrderStateMachine::class),
             ])
             ->setMethods(['createSdk'])
             ->getMock();

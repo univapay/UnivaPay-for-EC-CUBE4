@@ -42,6 +42,46 @@ trait OrderTrait
      */
     private $univa_pay_parent_subscription_id;
 
+
+    /**
+     * Subscription period on the parent order (SubscriptionPeriod id)
+     * Stored at checkout so later product edits do not change its cycle
+     *
+     * @ORM\Column(name="univa_pay_subscription_period", type="integer", nullable=true)
+     */
+    private $univa_pay_subscription_period;
+
+    /**
+     * Next scheduled payment date as last confirmed by UnivaPay
+     *
+     * @ORM\Column(name="univa_pay_next_charge_date", type="date", nullable=true)
+     */
+    private $univa_pay_next_charge_date;
+
+    public function getUnivapaySubscriptionPeriod(): ?int
+    {
+        return $this->univa_pay_subscription_period;
+    }
+
+    public function setUnivapaySubscriptionPeriod(?int $period)
+    {
+        $this->univa_pay_subscription_period = $period;
+
+        return $this;
+    }
+
+    public function getUnivapayNextChargeDate(): ?\DateTimeInterface
+    {
+        return $this->univa_pay_next_charge_date;
+    }
+
+    public function setUnivapayNextChargeDate(?\DateTimeInterface $date)
+    {
+        $this->univa_pay_next_charge_date = $date;
+
+        return $this;
+    }
+
     /**
      * @return string
      */

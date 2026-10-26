@@ -13,6 +13,8 @@ use Eccube\Service\PurchaseFlow\PurchaseFlow;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\SDK;
+use Plugin\UnivaPay\Util\SubscriptionMetadata;
+use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Symfony\Component\Form\FormInterface;
 use UnivaPay\Models\ChargeStatus;
 
@@ -127,7 +129,27 @@ class CreditCard implements PaymentMethodInterface
         elseif ($this->Order->getUnivapayParentSubscriptionId()) {
             $OrderStatus = $this->orderStatusRepository->find(UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE);
             $this->Order->setOrderStatus($OrderStatus);
-            // The is only a template for subscription order
+            // The parent is a subscription template, not a charged order
+            SubscriptionMetadata::saveCheckoutPeriod($this->Order);
+            try {
+                $sdk = new SDK($this->Config->findOneById(1));
+                SubscriptionMetadata::update(
+                    $this->Order,
+                    $sdk->getSubscription(
+                        $this->Order->getUnivapayParentSubscriptionId()
+                    )
+                );
+            } catch (\Throwable $e) {
+                // Metadata failure must not invalidate a completed checkout so a warn
+                UnivaPayLogger::get()->warning(
+                    'Subscription metadata refresh failed at checkout',
+                    [
+                        'subscription_id' =>
+                        $this->Order->getUnivapayParentSubscriptionId(),
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }
             $this->Order->setAddPoint(0);
 
             $this->purchaseFlow->rollback($this->Order, new PurchaseContext());

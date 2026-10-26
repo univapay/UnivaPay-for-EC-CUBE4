@@ -2,7 +2,7 @@
 
 namespace Plugin\UnivaPay\Util;
 
-require_once __DIR__.'/../Resource/vendor/autoload.php';
+require_once __DIR__ . '/../Resource/vendor/autoload.php';
 
 use Plugin\UnivaPay\Entity\Config;
 use Psr\Log\LoggerInterface;
@@ -46,12 +46,14 @@ class SDK
             ->loggingConfiguration(
                 LoggingConfigurationBuilder::init()->logger($this->logger)
                     ->level(\Psr\Log\LogLevel::INFO)
-                    ->requestConfiguration(RequestLoggingConfigurationBuilder::init()
-                        ->headers(true)
-                        ->body(true)
+                    ->requestConfiguration(
+                        RequestLoggingConfigurationBuilder::init()
+                            ->headers(true)
+                            ->body(true)
                     )
-                    ->responseConfiguration(ResponseLoggingConfigurationBuilder::init()
-                        ->body(true)
+                    ->responseConfiguration(
+                        ResponseLoggingConfigurationBuilder::init()
+                            ->body(true)
                     )
             )
             ->build();
@@ -89,7 +91,7 @@ class SDK
             return null;
         }
 
-        return rtrim($this->customerUrl, '/').'/stores/'.$storeId.'?'.http_build_query([
+        return rtrim($this->customerUrl, '/') . '/stores/' . $storeId . '?' . http_build_query([
             'emailAddress' => $email,
             'subscriptionId' => $subscriptionId,
         ]);
