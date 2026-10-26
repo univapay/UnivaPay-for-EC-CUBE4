@@ -37,8 +37,8 @@ class ConfigController extends AbstractController
 
     /** @Template("@UnivaPay/admin/config.twig") */
     #[Route(
-        path: "/%eccube_admin_route%/univapay/config",
-        name: "univa_pay_admin_config"
+        path: '/%eccube_admin_route%/univapay/config',
+        name: 'univa_pay_admin_config'
     )]
     public function index(Request $request)
     {

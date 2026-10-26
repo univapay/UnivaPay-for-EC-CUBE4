@@ -45,9 +45,9 @@ class SubscriptionListController extends AbstractController
 
     /** @Template("@UnivaPay/admin/subscription_list.twig") */
     #[Route(
-        path: "/%eccube_admin_route%/order/univapay/subscriptions",
-        name: "univa_pay_admin_subscriptions",
-        methods: ["GET"]
+        path: '/%eccube_admin_route%/order/univapay/subscriptions',
+        name: 'univa_pay_admin_subscriptions',
+        methods: ['GET']
     )]
     public function index(
         Request $request,
@@ -111,14 +111,14 @@ class SubscriptionListController extends AbstractController
                 $qb->setParameter('customerId', (int) $keyword);
             }
 
-            $qb->andWhere('(' . implode(' OR ', $parts) . ')')
+            $qb->andWhere('('.implode(' OR ', $parts).')')
                 ->setParameter(
                     'keyword',
-                    '%' . str_replace(
+                    '%'.str_replace(
                         ['%', '_'],
                         ['\\%', '\\_'],
                         $keyword
-                    ) . '%'
+                    ).'%'
                 );
         }
 
@@ -248,10 +248,10 @@ class SubscriptionListController extends AbstractController
     }
 
     #[Route(
-        path: "/%eccube_admin_route%/order/univapay/subscriptions/{id}/refresh",
-        name: "univa_pay_admin_subscription_refresh",
-        requirements: ["id" => "\\d+"],
-        methods: ["POST"]
+        path: '/%eccube_admin_route%/order/univapay/subscriptions/{id}/refresh',
+        name: 'univa_pay_admin_subscription_refresh',
+        requirements: ['id' => '\\d+'],
+        methods: ['POST']
     )]
     public function refresh(Request $request, int $id)
     {

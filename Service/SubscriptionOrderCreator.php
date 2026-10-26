@@ -1,5 +1,7 @@
 <?php
 
+
+
 namespace Plugin\UnivaPay\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
@@ -29,7 +31,7 @@ class SubscriptionOrderCreator
         PurchaseFlow $shoppingPurchaseFlow,
         OrderHelper $orderHelper,
         OrderNoProcessor $orderNoProcessor,
-        AddPointProcessor $addPointProcessor
+        AddPointProcessor $addPointProcessor,
     ) {
         $this->entityManager = $entityManager;
         $this->orderStatusRepository = $orderStatusRepository;
@@ -43,22 +45,18 @@ class SubscriptionOrderCreator
         Order $parent,
         Charge $charge,
         int $amount,
-        string $event
+        string $event,
     ): Order {
         if (!in_array(
             $event,
             ['subscription_payment', 'subscription_failure'],
             true
         )) {
-            throw new \InvalidArgumentException(
-                'Unsupported subscription event'
-            );
+            throw new \InvalidArgumentException('Unsupported subscription event');
         }
 
         if ($amount < 0 || !$charge->getId()) {
-            throw new \InvalidArgumentException(
-                'Invalid subscription charge'
-            );
+            throw new \InvalidArgumentException('Invalid subscription charge');
         }
 
         // Copy the subscription parent order.
@@ -123,9 +121,7 @@ class SubscriptionOrderCreator
         $status = $this->orderStatusRepository->find($statusId);
 
         if (!$status) {
-            throw new \RuntimeException(
-                'Subscription order status not found: '.$statusId
-            );
+            throw new \RuntimeException('Subscription order status not found: '.$statusId);
         }
 
         $newOrder->setOrderStatus($status);

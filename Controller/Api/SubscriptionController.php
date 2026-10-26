@@ -27,6 +27,7 @@ class SubscriptionController extends AbstractController
     private $mailService;
 
     private $orderCreator;
+
     public function __construct(
         ConfigRepository $configRepository,
         OrderRepository $orderRepository,
@@ -41,9 +42,9 @@ class SubscriptionController extends AbstractController
 
     /** Subscription webhook action. */
     #[Route(
-        path: "/univapay/hook",
-        name: "univa_pay_hook",
-        methods: ["POST"]
+        path: '/univapay/hook',
+        name: 'univa_pay_hook',
+        methods: ['POST']
     )]
     public function hook(Request $request)
     {

@@ -9,17 +9,12 @@ use Eccube\Entity\Order;
 use Eccube\Repository\OrderRepository;
 use Eccube\Service\MailService;
 use Eccube\Tests\EccubeTestCase;
-use PHPUnit\Framework\TestCase;
 use Plugin\UnivaPay\Controller\Api\SubscriptionController;
 use Plugin\UnivaPay\Entity\Config;
 use Plugin\UnivaPay\Repository\ConfigRepository;
+use Plugin\UnivaPay\Service\SubscriptionOrderCreator;
 use Plugin\UnivaPay\Util\SDK;
 use Symfony\Component\HttpFoundation\Request;
-use Plugin\UnivaPay\Service\SubscriptionOrderCreator;
-use Doctrine\DBAL\LockMode;
-use Eccube\Entity\Master\OrderStatus;
-use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
-use UnivaPay\Models\Charge;
 
 class SubscriptionWebhookIdempotencyTest extends EccubeTestCase
 {

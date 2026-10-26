@@ -1,5 +1,7 @@
 <?php
 
+
+
 namespace Plugin\UnivaPay\Tests\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
@@ -55,7 +57,7 @@ class SubscriptionOrderCreatorTest extends TestCase
      */
     public function testCreatesChildOrderAndRunsPurchaseFlow(
         string $event,
-        int $expectedStatusId
+        int $expectedStatusId,
     ): void {
         $parent = $this->parentOrder();
         $charge = $this->charge('subscriptionAssociatedChargeId');
@@ -98,6 +100,7 @@ class SubscriptionOrderCreatorTest extends TestCase
             ->with(
                 $this->callback(function ($order) use (&$persistedOrder) {
                     $persistedOrder = $order;
+
                     return $order instanceof Order;
                 })
             );
@@ -295,7 +298,7 @@ class SubscriptionOrderCreatorTest extends TestCase
         )) {
             $this->markTestSkipped(
                 'UnivaPay OrderTrait is not loaded. '
-                    . 'EC-CUBE generated entity proxies are required.'
+                    .'EC-CUBE generated entity proxies are required.'
             );
         }
 
