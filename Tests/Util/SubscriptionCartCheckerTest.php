@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Tests\Util;
 
 use Eccube\Entity\Cart;

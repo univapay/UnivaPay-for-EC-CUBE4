@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Util;
 
 use Eccube\DependencyInjection\Facade\LoggerFacade;

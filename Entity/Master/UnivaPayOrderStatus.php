@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Entity\Master;
 
 use Doctrine\ORM\Mapping as ORM;

@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Tests\Util;
 
 use PHPUnit\Framework\TestCase;

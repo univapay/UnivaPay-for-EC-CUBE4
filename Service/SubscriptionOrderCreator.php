@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Service;
 
 use Doctrine\ORM\EntityManagerInterface;

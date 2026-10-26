@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Tests\Admin;
 
 use Eccube\Tests\Web\Admin\AbstractAdminWebTestCase;

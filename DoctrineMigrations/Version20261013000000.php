@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\DoctrineMigrations;
 
 use Doctrine\DBAL\Schema\Schema;

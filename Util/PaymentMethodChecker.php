@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Util;
 
 use Eccube\Entity\Order;

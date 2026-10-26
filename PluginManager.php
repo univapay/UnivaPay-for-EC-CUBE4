@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay;
 
 require_once __DIR__.'/Resource/autoload.php';

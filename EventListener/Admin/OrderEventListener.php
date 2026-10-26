@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\EventListener\Admin;
 
 use Eccube\Event\EccubeEvents;

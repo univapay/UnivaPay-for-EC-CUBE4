@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Tests;
 
 use Eccube\Entity\Delivery;

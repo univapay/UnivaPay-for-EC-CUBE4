@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Controller\Mypage;
 
 use Eccube\Controller\AbstractController;

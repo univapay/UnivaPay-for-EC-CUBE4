@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Form\Type\Admin;
 
 use Plugin\UnivaPay\Entity\Config;

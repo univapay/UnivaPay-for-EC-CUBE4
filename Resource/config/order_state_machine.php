@@ -1,7 +1,5 @@
 <?php
 
-
-
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 
 $container->loadFromExtension('framework', [

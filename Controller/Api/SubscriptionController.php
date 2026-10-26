@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Controller\Api;
 
 use Eccube\Controller\AbstractController;

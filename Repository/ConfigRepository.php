@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Repository;
 
 use Doctrine\Persistence\ManagerRegistry;

@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay;
 
 use Eccube\Common\EccubeNav;

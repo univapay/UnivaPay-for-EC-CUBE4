@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Tests\Admin;
 
 use Eccube\Entity\Master\OrderStatus;

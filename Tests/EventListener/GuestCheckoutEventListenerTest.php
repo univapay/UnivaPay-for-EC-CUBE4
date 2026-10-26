@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Plugin\UnivaPay\Tests\EventListener;
 
 use PHPUnit\Framework\TestCase;
