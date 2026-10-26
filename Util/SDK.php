@@ -2,12 +2,11 @@
 
 namespace Plugin\UnivaPay\Util;
 
-require_once __DIR__ . '/../Resource/vendor/autoload.php';
+require_once __DIR__.'/../Resource/autoload.php';
 
 use Plugin\UnivaPay\Entity\Config;
 use Psr\Log\LoggerInterface;
 use UnivaPay\Authentication\BearerAuthCredentialsBuilder;
-use UnivaPay\Http\HttpCallBack;
 use UnivaPay\Logging\LoggingConfigurationBuilder;
 use UnivaPay\Logging\RequestLoggingConfigurationBuilder;
 use UnivaPay\Logging\ResponseLoggingConfigurationBuilder;
@@ -22,7 +21,7 @@ use UnivaPay\UnivapayClientSdkClientBuilder;
 
 class SDK
 {
-    /** @var univapayclientsdkclient */
+    /** @var UnivapayClientSdkClient */
     private $client;
 
     /** @var LoggerInterface */

@@ -8,7 +8,7 @@ use Plugin\UnivaPay\Util\PaymentMethodChecker;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\UnivaPayApiException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Workflow\Event\Event;
 use UnivaPay\Models\ChargeStatus;
 
@@ -17,18 +17,18 @@ class OrderEventListener implements EventSubscriberInterface
     /** @var ConfigRepository */
     private $configRepository;
 
-    /** @var SessionInterface */
-    private $session;
+    /** @var RequestStack */
+    private $requestStack;
 
     public function __construct(
         ConfigRepository $configRepository,
-        SessionInterface $session
+        RequestStack $requestStack,
     ) {
         $this->configRepository = $configRepository;
-        $this->session = $session;
+        $this->requestStack = $requestStack;
     }
 
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [
             'workflow.order.transition.pay' => 'onPayOrder',
@@ -42,7 +42,7 @@ class OrderEventListener implements EventSubscriberInterface
             return $fn();
         } catch (UnivaPayApiException $e) {
             $message = trans('univa_pay.admin.order_edit.action_error', ['%message%' => $e->getMessage()]);
-            $this->session->getFlashBag()->add('eccube.admin.error', $message);
+            $this->requestStack->getSession()->getFlashBag()->add('eccube.admin.error', $message);
             throw new ShoppingException($message);
         }
     }

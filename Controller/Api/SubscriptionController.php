@@ -14,8 +14,8 @@ use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
 use Eccube\Service\PurchaseFlow\PurchaseContext;
 use Eccube\Service\PurchaseFlow\PurchaseFlow;
 use Plugin\UnivaPay\Entity\Config;
-use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Repository\ConfigRepository;
+use Plugin\UnivaPay\Util\ChargeOrderDuplicationPrevention;
 use Plugin\UnivaPay\Util\OrderCopier;
 use Plugin\UnivaPay\Util\SDK;
 use Plugin\UnivaPay\Util\SubscriptionMetadata;
@@ -24,6 +24,7 @@ use Plugin\UnivaPay\Util\ChargeOrderDuplicationPrevention;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
 
 class SubscriptionController extends AbstractController
 {
@@ -36,6 +37,7 @@ class SubscriptionController extends AbstractController
         OrderRepository $orderRepository,
         MailService $mailService
     ) {
+        $this->addPointProcessor = $addPointProcessor;
         $this->Config = $configRepository;
         $this->Order = $orderRepository;
         $this->mailService = $mailService;
@@ -48,6 +50,16 @@ class SubscriptionController extends AbstractController
      */
     public function hook(Request $request)
     {
+        try {
+            $config = $this->Config->get(1);
+
+            if (!$config) {
+                UnivaPayLogger::get()->error(
+                    'Webhook ignored: UnivaPay config not found'
+                );
+
+                return new Response('Acknowledged', 200);
+            }
         try {
             $config = $this->Config->get(1);
 

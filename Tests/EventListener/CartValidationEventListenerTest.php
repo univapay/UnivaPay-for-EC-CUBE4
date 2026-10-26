@@ -15,6 +15,7 @@ use Plugin\UnivaPay\EventListener\CartValidationEventListener;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\Routing\RouterInterface;
@@ -26,22 +27,22 @@ class CartValidationEventListenerTest extends TestCase
     /** @var CartService */
     private $cartService;
 
-    /** @var Session|\PHPUnit_Framework_MockObject_MockObject */
+    /** @var Session|\PHPUnit\Framework\MockObject\MockObject */
     private $session;
 
-    /** @var FlashBagInterface|\PHPUnit_Framework_MockObject_MockObject */
+    /** @var FlashBagInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $flashBag;
 
-    /** @var RouterInterface|\PHPUnit_Framework_MockObject_MockObject */
+    /** @var RouterInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $router;
 
-    /** @var PurchaseFlow|\PHPUnit_Framework_MockObject_MockObject */
+    /** @var PurchaseFlow|\PHPUnit\Framework\MockObject\MockObject */
     private $purchaseFlow;
 
-    /** @var TokenStorageInterface|\PHPUnit_Framework_MockObject_MockObject */
+    /** @var TokenStorageInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $tokenStorage;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->cartService = $this->createMock(CartService::class);
         $this->session = $this->createMock(Session::class);
@@ -52,11 +53,19 @@ class CartValidationEventListenerTest extends TestCase
         $this->tokenStorage = $this->createMock(TokenStorageInterface::class);
     }
 
+    private function requestStack()
+    {
+        $requestStack = $this->createMock(RequestStack::class);
+        $requestStack->method('getSession')->willReturn($this->session);
+
+        return $requestStack;
+    }
+
     private function createListener()
     {
         return new CartValidationEventListener(
             $this->cartService,
-            $this->session,
+            $this->requestStack(),
             $this->router,
             $this->purchaseFlow,
             $this->tokenStorage
@@ -232,7 +241,7 @@ class CartValidationEventListenerTest extends TestCase
     public function anonymousTokenProvider()
     {
         $anonymousToken = $this->createMock(TokenInterface::class);
-        $anonymousToken->method('getUser')->willReturn('anon.');
+        $anonymousToken->method('getUser')->willReturn(null);
 
         return [
             'no token' => [null],

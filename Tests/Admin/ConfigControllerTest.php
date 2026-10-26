@@ -12,7 +12,7 @@ class ConfigControllerTest extends AbstractAdminWebTestCase
 {
     protected $faker;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         $this->faker = $this->getFaker();
@@ -22,7 +22,7 @@ class ConfigControllerTest extends AbstractAdminWebTestCase
     {
         $crawler = $this->client->request('GET', $this->generateUrl('univa_pay_admin_config'));
         $this->assertTrue($this->client->getResponse()->isSuccessful());
-        $this->assertContains('トークン', $crawler->html());
+        $this->assertStringContainsString('トークン', $crawler->html());
     }
 
     public function testSaveConfigSuccessfully()
@@ -37,6 +37,6 @@ class ConfigControllerTest extends AbstractAdminWebTestCase
         $crawler = $this->client->submit($form);
         $this->assertTrue($this->client->getResponse()->isRedirection($this->generateUrl('univa_pay_admin_config')));
         $crawler = $this->client->followRedirect();
-        $this->assertContains(trans('univa_pay.admin.save.success'), $crawler->html());
+        $this->assertStringContainsString(trans('univa_pay.admin.save.success'), $crawler->html());
     }
 }

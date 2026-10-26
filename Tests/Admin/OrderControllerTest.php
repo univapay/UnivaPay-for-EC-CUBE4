@@ -13,7 +13,7 @@ class OrderControllerTest extends AbstractAdminWebTestCase
 {
     private $mockOrders;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -48,14 +48,14 @@ class OrderControllerTest extends AbstractAdminWebTestCase
         $form = $crawler->selectButton('検索')->form();
         $form['admin_search_order[multi]'] = $this->mockOrders[0]->getUnivapayChargeId();
         $crawler = $this->client->submit($form);
-        $this->assertContains($this->mockOrders[0]->getUnivapayChargeId(), $crawler->html());
-        $this->assertNotContains($this->mockOrders[1]->getUnivapayParentSubscriptionId(), $crawler->html());
+        $this->assertStringContainsString($this->mockOrders[0]->getUnivapayChargeId(), $crawler->html());
+        $this->assertStringNotContainsString($this->mockOrders[1]->getUnivapayParentSubscriptionId(), $crawler->html());
 
         // Search by UnivaPay Subscription ID
         $form = $crawler->selectButton('検索')->form();
         $form['admin_search_order[multi]'] = $this->mockOrders[1]->getUnivapayParentSubscriptionId();
         $crawler = $this->client->submit($form);
-        $this->assertContains($this->mockOrders[1]->getUnivapayParentSubscriptionId(), $crawler->html());
-        $this->assertNotContains($this->mockOrders[0]->getUnivapayChargeId(), $crawler->html());
+        $this->assertStringContainsString($this->mockOrders[1]->getUnivapayParentSubscriptionId(), $crawler->html());
+        $this->assertStringNotContainsString($this->mockOrders[0]->getUnivapayChargeId(), $crawler->html());
     }
 }

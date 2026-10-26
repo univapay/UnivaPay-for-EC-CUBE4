@@ -2,7 +2,7 @@
 
 namespace Plugin\UnivaPay;
 
-require_once __DIR__ . '/Resource/vendor/autoload.php';
+require_once __DIR__.'/Resource/autoload.php';
 
 use Eccube\Common\EccubeConfig;
 use Eccube\Entity\MailTemplate;
@@ -20,7 +20,7 @@ use Plugin\UnivaPay\Service\Method\CreditCard;
 use Plugin\UnivaPay\Util\Constants;
 use Plugin\UnivaPay\Util\LegacySubscriptionMigration;
 use Plugin\UnivaPay\Util\SubscriptionMetadata;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Psr\Container\ContainerInterface;
 
 class PluginManager extends AbstractPluginManager
 {
@@ -114,7 +114,7 @@ class PluginManager extends AbstractPluginManager
             $entity->setMailSubject($item['subject']);
             $entity->setFileName($item['fileName']);
             $entityManager->persist($entity);
-            $entityManager->flush($entity);
+            $entityManager->flush();
         }
     }
 
@@ -154,7 +154,7 @@ class PluginManager extends AbstractPluginManager
         $Payment->setMethodClass(CreditCard::class);
 
         $entityManager->persist($Payment);
-        $entityManager->flush($Payment);
+        $entityManager->flush();
     }
 
     private function createConfig(ContainerInterface $container)
@@ -174,7 +174,7 @@ class PluginManager extends AbstractPluginManager
         $Config->setCapture(false);
 
         $entityManager->persist($Config);
-        $entityManager->flush($Config);
+        $entityManager->flush();
     }
 
     private function createMasterData(ContainerInterface $container, array $statuses, $class)
@@ -189,7 +189,7 @@ class PluginManager extends AbstractPluginManager
             $PaymentStatus->setName($name);
             $PaymentStatus->setSortNo($id);
             $entityManager->persist($PaymentStatus);
-            $entityManager->flush($PaymentStatus);
+            $entityManager->flush();
         }
     }
 

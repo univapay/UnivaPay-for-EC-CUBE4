@@ -17,6 +17,7 @@ trait OrderTrait
      * dtb_order.univa_pay_charge_id
      *
      * @var string
+     *
      * @ORM\Column(type="string", nullable=true)
      */
     private $univa_pay_charge_id;
@@ -28,6 +29,7 @@ trait OrderTrait
      * dtb_order.univa_pay_subscription_id
      *
      * @var string
+     *
      * @ORM\Column(type="string", nullable=true)
      */
     private $univa_pay_subscription_id;
@@ -38,6 +40,7 @@ trait OrderTrait
      * dtb_order.univa_pay_parent_subscription_id
      *
      * @var string
+     *
      * @ORM\Column(type="string", length=64, nullable=true)
      */
     private $univa_pay_parent_subscription_id;
