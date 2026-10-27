@@ -33,11 +33,11 @@ class ConfigController extends AbstractController
         $this->composerService = $composerService;
     }
 
-    /** @Template("@UnivaPay/admin/config.twig") */
-    #[Route(
-        path: '/%eccube_admin_route%/univapay/config',
-        name: 'univa_pay_admin_config'
-    )]
+    /**
+     * @Route("/%eccube_admin_route%/univapay/config", name="univa_pay_admin_config")
+     *
+     * @Template("@UnivaPay/admin/config.twig")
+     */
     public function index(Request $request)
     {
         $Config = $this->configRepository->get();

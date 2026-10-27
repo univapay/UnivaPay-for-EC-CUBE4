@@ -41,12 +41,11 @@ class SubscriptionListController extends AbstractController
         $this->configs = $configs;
     }
 
-    /** @Template("@UnivaPay/admin/subscription_list.twig") */
-    #[Route(
-        path: '/%eccube_admin_route%/order/univapay/subscriptions',
-        name: 'univa_pay_admin_subscriptions',
-        methods: ['GET']
-    )]
+    /**
+     * @Route("/%eccube_admin_route%/order/univapay/subscriptions", name="univa_pay_admin_subscriptions", methods={"GET"})
+     *
+     * @Template("@UnivaPay/admin/subscription_list.twig")
+     */
     public function index(
         Request $request,
         PaginatorInterface $paginator,
@@ -245,12 +244,9 @@ class SubscriptionListController extends AbstractController
         ];
     }
 
-    #[Route(
-        path: '/%eccube_admin_route%/order/univapay/subscriptions/{id}/refresh',
-        name: 'univa_pay_admin_subscription_refresh',
-        requirements: ['id' => '\\d+'],
-        methods: ['POST']
-    )]
+    /**
+     * @Route("/%eccube_admin_route%/order/univapay/subscriptions/{id}/refresh", requirements={"id" = "\d+"}, name="univa_pay_admin_subscription_refresh", methods={"POST"})
+     */
     public function refresh(Request $request, int $id)
     {
         $this->isTokenValid();

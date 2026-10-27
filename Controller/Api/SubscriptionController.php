@@ -38,12 +38,11 @@ class SubscriptionController extends AbstractController
         $this->orderCreator = $orderCreator;
     }
 
-    /** Subscription webhook action. */
-    #[Route(
-        path: '/univapay/hook',
-        name: 'univa_pay_hook',
-        methods: ['POST']
-    )]
+    /**
+     * Subscription webhook action.
+     *
+     * @Route("/univapay/hook", name="univa_pay_hook", methods={"POST"})
+     */
     public function hook(Request $request)
     {
         try {
