@@ -58,10 +58,7 @@ univa_pay.admin.subscriptions.next: 次回課金日
 univa_pay.admin.subscriptions.number: 受注番号
 univa_pay.admin.subscriptions.period: 課金周期
 univa_pay.admin.subscriptions.products: 商品
-univa_pay.admin.subscriptions.refresh: 更新
-univa_pay.admin.subscriptions.refresh_failed: 更新できませんでした。UnivaPay の設定とログをご確認ください。
-univa_pay.admin.subscriptions.refreshed: UnivaPay の定期課金情報を更新しました。
-univa_pay.admin.subscriptions.snapshot_note: 次回課金日は最終取得時点の情報です。最新情報を確認するには「更新」を押してください。前回課金結果は EC-CUBE に登録済みの最新の定期課金受注を表示します。
+univa_pay.admin.subscriptions.snapshot_note: 次回課金日は最終取得時点の情報です。前回課金結果は EC-CUBE に登録済みの最新の定期課金受注を表示します。
 univa_pay.admin.subscriptions.sort: 並び順
 univa_pay.admin.subscriptions.start: 開始日
 univa_pay.admin.subscriptions.status: ステータス

@@ -153,10 +153,6 @@ trait OrderTrait
     {
         return $this->univa_pay_parent_subscription_id !== null
             && $this->getOrderStatus() !== null
-            && in_array($this->getOrderStatus()->getId(), [
-                UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE,
-                UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_CANCEL,
-                UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_SUSPEND,
-            ], true);
+            && in_array($this->getOrderStatus()->getId(), UnivaPayOrderStatus::SUBSCRIPTION_STATUSES, true);
     }
 }

@@ -127,6 +127,10 @@ class SubscriptionListControllerTest extends AbstractAdminWebTestCase
         $this->assertNotSame(false, strpos($html, 'subscription-list-test'));
         $this->assertNotSame(false, strpos($html, $parent->getOrderNo()));
         $this->assertSame(false, strpos($html, 'LIST-CHILD-1402'));
+        $this->assertStringContainsString(
+            $this->generateUrl('admin_customer_edit', ['id' => $parent->getCustomer()->getId()]),
+            $html
+        );
 
         $crawler = $this->client->request(
             'GET',
@@ -143,5 +147,54 @@ class SubscriptionListControllerTest extends AbstractAdminWebTestCase
             false,
             strpos($crawler->html(), $parent->getOrderNo())
         );
+    }
+
+    public function testFiltersByMultipleStatuses(): void
+    {
+        $orders = [];
+        foreach ([
+            UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE,
+            UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_SUSPEND,
+            UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_CANCEL,
+        ] as $i => $statusId) {
+            $order = $this->createOrder($this->createCustomer());
+            $order->setOrderNo('STATUS-FILTER-'.$i);
+            $order->setUnivapayParentSubscriptionId('status-filter-'.$i);
+            $order->setOrderStatus(
+                $this->entityManager->find(OrderStatus::class, $statusId)
+            );
+            $orders[] = $order;
+        }
+        $this->entityManager->flush();
+
+        $html = $this->client->request(
+            'GET',
+            $this->generateUrl('univa_pay_admin_subscriptions', [
+                'keyword' => 'STATUS-FILTER',
+                'status' => [
+                    UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE,
+                    UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_SUSPEND,
+                ],
+            ])
+        )->html();
+
+        $this->assertStringContainsString('STATUS-FILTER-0', $html);
+        $this->assertStringContainsString('STATUS-FILTER-1', $html);
+        $this->assertStringNotContainsString('STATUS-FILTER-2', $html);
+
+        $html = $this->client->request(
+            'GET',
+            $this->generateUrl('univa_pay_admin_subscriptions')
+        )->html();
+
+        $this->assertStringContainsString('STATUS-FILTER-0', $html);
+        $this->assertStringNotContainsString('STATUS-FILTER-1', $html);
+
+        $html = $this->client->request(
+            'GET',
+            $this->generateUrl('univa_pay_admin_subscriptions', ['keyword' => 'STATUS-FILTER'])
+        )->html();
+
+        $this->assertStringContainsString('STATUS-FILTER-2', $html);
     }
 }

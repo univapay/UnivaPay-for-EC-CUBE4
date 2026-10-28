@@ -177,11 +177,7 @@ class SubscriptionController extends AbstractController
             $parent = $this->Order->findOneBy([
                 'univa_pay_parent_subscription_id' => $data->data->id,
                 'univa_pay_charge_id' => null,
-                'OrderStatus' => [
-                    UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_ACTIVE,
-                    UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_CANCEL,
-                    UnivaPayOrderStatus::UNIVAPAY_SUBSCRIPTION_SUSPEND,
-                ],
+                'OrderStatus' => UnivaPayOrderStatus::SUBSCRIPTION_STATUSES,
             ]);
 
             if ($parent) {
