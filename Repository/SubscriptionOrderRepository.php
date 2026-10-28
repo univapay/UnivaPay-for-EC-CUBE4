@@ -4,7 +4,6 @@ namespace Plugin\UnivaPay\Repository;
 
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
-use Eccube\Entity\Master\OrderStatus;
 use Eccube\Entity\Order;
 use Eccube\Repository\AbstractRepository;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
