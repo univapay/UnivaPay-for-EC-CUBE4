@@ -9,11 +9,17 @@ use Eccube\Entity\Payment;
 use Eccube\Entity\PaymentOption;
 use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
 use Eccube\Tests\EccubeTestCase;
+use Plugin\UnivaPay\Entity\Config;
 use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
+use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use Plugin\UnivaPay\PluginManager;
 use Plugin\UnivaPay\Service\Method\CreditCard;
 use Plugin\UnivaPay\Util\Constants;
 use Plugin\UnivaPay\Util\LegacySubscriptionMigration;
+use Plugin\UnivaPay\Util\SubscriptionMetadata;
+use UnivaPay\Models\Subscription;
+use UnivaPay\Models\SubscriptionNextPayment;
+use UnivaPay\Models\SubscriptionStatus;
 
 class SubscriptionMigrationTest extends EccubeTestCase
 {
@@ -152,6 +158,90 @@ class SubscriptionMigrationTest extends EccubeTestCase
         $this->assertSame('charge-x', $order->getUnivapayChargeId());
         $this->assertSame(OrderStatus::PAID, $order->getOrderStatus()->getId());
         $this->assertCount($orderCount, $this->entityManager->getRepository(Order::class)->findAll());
+    }
+
+    public function testBackfillsOnlyParentsAfterLegacyMigration(): void
+    {
+        $this->createLegacyOrder(
+            'sub-a',
+            'charge-a1',
+            OrderStatus::PAID
+        );
+        $this->createLegacyOrder(
+            'sub-a',
+            'charge-a2',
+            OrderStatus::PAID
+        );
+
+        $this->migrate();
+
+        $seen = [];
+
+        $config = new Config();
+
+        $fetch = function (string $id) use (&$seen): Subscription {
+            $seen[] = $id;
+
+            $subscription = new Subscription();
+            $subscription->setPeriod('monthly');
+            $subscription->setStatus(SubscriptionStatus::CURRENT);
+
+            $payment = new SubscriptionNextPayment();
+            $payment->setDueDate(
+                new \DateTime('2026-11-05')
+            );
+            $subscription->setNextPayment($payment);
+
+            return $subscription;
+        };
+
+        SubscriptionMetadata::backfill(
+            $this->entityManager,
+            $config,
+            $fetch
+        );
+
+        SubscriptionMetadata::backfill(
+            $this->entityManager,
+            $config,
+            $fetch
+        );
+
+        $this->assertSame(['sub-a'], $seen);
+
+        $orders = $this->entityManager
+            ->getRepository(Order::class)
+            ->findBy([
+                'univa_pay_parent_subscription_id' => 'sub-a',
+            ]);
+
+        $this->entityManager->clear();
+
+        foreach ($orders as $order) {
+            $fresh = $this->entityManager->find(
+                Order::class,
+                $order->getId()
+            );
+
+            if ($fresh->isUnivapaySubscriptionParent()) {
+                $this->assertSame(
+                    SubscriptionPeriod::MONTHLY,
+                    $fresh->getUnivapaySubscriptionPeriod()
+                );
+
+                $this->assertSame(
+                    '2026-11-05',
+                    $fresh->getUnivapayNextChargeDate()->format('Y-m-d')
+                );
+            } else {
+                $this->assertNull(
+                    $fresh->getUnivapaySubscriptionPeriod()
+                );
+                $this->assertNull(
+                    $fresh->getUnivapayNextChargeDate()
+                );
+            }
+        }
     }
 
     private function migrate()

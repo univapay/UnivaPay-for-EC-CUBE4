@@ -67,7 +67,7 @@ class Config
     private $webhook_auth;
 
     /**
-     * @var boolean
+     * @var bool
      *
      * @ORM\Column(name="capture", type="boolean", nullable=true)
      */
@@ -200,7 +200,7 @@ class Config
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function getCapture()
     {
@@ -208,7 +208,7 @@ class Config
     }
 
     /**
-     * @param boolean $capture
+     * @param bool $capture
      *
      * @return $this;
      */

@@ -19,6 +19,7 @@ use Plugin\UnivaPay\Entity\SubscriptionPeriod;
 use Plugin\UnivaPay\Service\Method\CreditCard;
 use Plugin\UnivaPay\Util\Constants;
 use Plugin\UnivaPay\Util\LegacySubscriptionMigration;
+use Plugin\UnivaPay\Util\SubscriptionMetadata;
 use Psr\Container\ContainerInterface;
 
 class PluginManager extends AbstractPluginManager
@@ -33,6 +34,12 @@ class PluginManager extends AbstractPluginManager
         $entityManager = $container->get('doctrine')->getManager();
         $this->migration($entityManager->getConnection(), $meta['code']);
         $this->migrateFrom150($container);
+        $config = $entityManager->find(Config::class, 1);
+        // Backfill must run after the existing plugin migrations and the 1.5.0 migration
+        // Otherwise, newly migrated parent orders could be missed since it's dependent on the parent order subscription
+        if ($config) {
+            SubscriptionMetadata::backfill($entityManager, $config);
+        }
     }
 
     private function seedMasterData(ContainerInterface $container)

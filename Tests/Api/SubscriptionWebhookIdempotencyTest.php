@@ -4,22 +4,17 @@ namespace Plugin\UnivaPay\Tests\Controller\Api;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Eccube\Entity\Order;
-use Eccube\Repository\Master\OrderStatusRepository;
 use Eccube\Repository\OrderRepository;
 use Eccube\Service\MailService;
-use Eccube\Service\OrderHelper;
-use Eccube\Service\OrderStateMachine;
-use Eccube\Service\PurchaseFlow\Processor\AddPointProcessor;
-use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
-use Eccube\Service\PurchaseFlow\PurchaseFlow;
-use PHPUnit\Framework\TestCase;
+use Eccube\Tests\EccubeTestCase;
 use Plugin\UnivaPay\Controller\Api\SubscriptionController;
 use Plugin\UnivaPay\Entity\Config;
 use Plugin\UnivaPay\Repository\ConfigRepository;
+use Plugin\UnivaPay\Service\SubscriptionOrderCreator;
 use Plugin\UnivaPay\Util\SDK;
 use Symfony\Component\HttpFoundation\Request;
 
-class SubscriptionWebhookIdempotencyTest extends TestCase
+class SubscriptionWebhookIdempotencyTest extends EccubeTestCase
 {
     public function testRepeatNotificationDoesNotSendMailOrUpdateChargeMetadata()
     {
@@ -105,32 +100,35 @@ class SubscriptionWebhookIdempotencyTest extends TestCase
     private function controller(
         OrderRepository $orders,
         MailService $mail,
+        ?SubscriptionOrderCreator $creator = null,
+        ?EntityManagerInterface $em = null,
     ): SubscriptionController {
+        $config = new Config();
+        $config->setWebhookAuth(null);
+
         $configs = $this->createMock(ConfigRepository::class);
 
-        $configs->method('get')
+        $configs->expects($this->once())
+            ->method('get')
             ->with(1)
-            ->willReturn(new Config());
+            ->willReturn($config);
 
         $controller = $this->getMockBuilder(
             SubscriptionController::class
         )
             ->setConstructorArgs([
-                $this->createMock(AddPointProcessor::class),
                 $configs,
                 $orders,
-                $this->createMock(OrderStatusRepository::class),
-                $this->createMock(PurchaseFlow::class),
-                $this->createMock(OrderHelper::class),
-                $this->createMock(OrderNoProcessor::class),
                 $mail,
-                $this->createMock(OrderStateMachine::class),
+                $creator ?? $this->createMock(
+                    SubscriptionOrderCreator::class
+                ),
             ])
             ->setMethods(['createSdk'])
             ->getMock();
 
         $controller->setEntityManager(
-            $this->createMock(EntityManagerInterface::class)
+            $em ?? $this->createMock(EntityManagerInterface::class)
         );
 
         return $controller;
