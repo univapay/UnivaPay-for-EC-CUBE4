@@ -9,7 +9,6 @@ return array(
     'apimatic\\jsonmapper\\' => array($vendorDir . '/apimatic/jsonmapper/src'),
     'UnivaPay\\' => array($vendorDir . '/univapay/client-sdk/src'),
     'Unirest\\' => array($vendorDir . '/apimatic/unirest-php/src'),
-    'Psr\\Log\\' => array($vendorDir . '/psr/log/Psr/Log'),
     'Core\\' => array($vendorDir . '/apimatic/core/src'),
     'CoreInterfaces\\' => array($vendorDir . '/apimatic/core-interfaces/src'),
 );

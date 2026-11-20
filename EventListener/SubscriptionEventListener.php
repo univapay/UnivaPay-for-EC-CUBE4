@@ -12,6 +12,7 @@ use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Util\Constants;
 use Plugin\UnivaPay\Util\PaymentMethodChecker;
 use Plugin\UnivaPay\Util\SDK;
+use Plugin\UnivaPay\Util\SubscriptionMetadata;
 use Plugin\UnivaPay\Util\UnivaPayApiException;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -106,6 +107,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
             }
 
             $util->suspendSubscription($order->getUnivapayParentSubscriptionId());
+            $order->setUnivapayNextChargeDate(null);
         });
     }
 
@@ -131,6 +133,7 @@ class SubscriptionEventListener implements EventSubscriberInterface
                 $this->sendEmailCancelSubscription($order);
             }
         });
+        $order->setUnivapayNextChargeDate(null);
     }
 
     public function onResumeSubscription(Event $event)
@@ -150,6 +153,22 @@ class SubscriptionEventListener implements EventSubscriberInterface
 
             $util->unsuspendSubscription($order->getUnivapayParentSubscriptionId());
         });
+        try {
+            SubscriptionMetadata::update(
+                $order,
+                $util->getSubscription(
+                    $order->getUnivapayParentSubscriptionId()
+                )
+            );
+        } catch (\Throwable $e) {
+            UnivaPayLogger::get()->warning(
+                'Subscription metadata refresh after resume failed',
+                [
+                    'subscription_id' => $order->getUnivapayParentSubscriptionId(),
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }
     }
 
     private function sendEmailCancelSubscription($order)

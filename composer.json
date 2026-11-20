@@ -8,5 +8,10 @@
   },
   "require": {
     "ec-cube/plugin-installer": "~0.0.6 || ^2.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "ec-cube/plugin-installer": true
+    }
   }
 }

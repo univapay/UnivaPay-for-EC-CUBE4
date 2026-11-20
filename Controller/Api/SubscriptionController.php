@@ -3,20 +3,16 @@
 namespace Plugin\UnivaPay\Controller\Api;
 
 use Eccube\Controller\AbstractController;
-use Eccube\Entity\Master\OrderStatus;
-use Eccube\Repository\Master\OrderStatusRepository;
+use Eccube\Entity\Order;
 use Eccube\Repository\OrderRepository;
 use Eccube\Service\MailService;
-use Eccube\Service\OrderHelper;
-use Eccube\Service\PurchaseFlow\Processor\AddPointProcessor;
-use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
-use Eccube\Service\PurchaseFlow\PurchaseContext;
-use Eccube\Service\PurchaseFlow\PurchaseFlow;
 use Plugin\UnivaPay\Entity\Config;
+use Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus;
 use Plugin\UnivaPay\Repository\ConfigRepository;
+use Plugin\UnivaPay\Service\SubscriptionOrderCreator;
 use Plugin\UnivaPay\Util\ChargeOrderDuplicationPrevention;
-use Plugin\UnivaPay\Util\OrderCopier;
 use Plugin\UnivaPay\Util\SDK;
+use Plugin\UnivaPay\Util\SubscriptionMetadata;
 use Plugin\UnivaPay\Util\UnivaPayLogger;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,33 +20,22 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class SubscriptionController extends AbstractController
 {
-    private $addPointProcessor;
     private $Config;
     private $Order;
-    private $orderStatusRepository;
-    private $purchaseFlow;
-    private $orderHelper;
-    private $orderNoProcessor;
     private $mailService;
 
+    private $orderCreator;
+
     public function __construct(
-        AddPointProcessor $addPointProcessor,
         ConfigRepository $configRepository,
         OrderRepository $orderRepository,
-        OrderStatusRepository $orderStatusRepository,
-        PurchaseFlow $shoppingPurchaseFlow,
-        OrderHelper $orderHelper,
-        OrderNoProcessor $orderNoProcessor,
         MailService $mailService,
+        SubscriptionOrderCreator $orderCreator,
     ) {
-        $this->addPointProcessor = $addPointProcessor;
         $this->Config = $configRepository;
         $this->Order = $orderRepository;
-        $this->orderStatusRepository = $orderStatusRepository;
-        $this->purchaseFlow = $shoppingPurchaseFlow;
-        $this->orderHelper = $orderHelper;
-        $this->orderNoProcessor = $orderNoProcessor;
         $this->mailService = $mailService;
+        $this->orderCreator = $orderCreator;
     }
 
     /**
@@ -150,10 +135,10 @@ class SubscriptionController extends AbstractController
                 $data->data->id,
                 $charge->getId(),
                 function (Order $parent) use ($data, $charge) {
-                    return $this->createOrder(
+                    return $this->orderCreator->create(
                         $parent,
-                        $data,
                         $charge,
+                        $data->data->amount,
                         $data->event
                     );
                 }
@@ -184,6 +169,32 @@ class SubscriptionController extends AbstractController
             );
 
             return new Response('Acknowledged', 200);
+        }
+
+        // Refreshing the parent metadata after recording/ack-ing the charge
+        // A lookup failure does not and should not undo the created order
+        try {
+            $parent = $this->Order->findOneBy([
+                'univa_pay_parent_subscription_id' => $data->data->id,
+                'univa_pay_charge_id' => null,
+                'OrderStatus' => UnivaPayOrderStatus::SUBSCRIPTION_STATUSES,
+            ]);
+
+            if ($parent) {
+                SubscriptionMetadata::update(
+                    $parent,
+                    $sdk->getSubscription($data->data->id)
+                );
+                $this->entityManager->flush();
+            }
+        } catch (\Throwable $e) {
+            UnivaPayLogger::get()->warning(
+                'Subscription list metadata refresh failed',
+                [
+                    'subscription_id' => $data->data->id,
+                    'error' => $e->getMessage(),
+                ]
+            );
         }
 
         // The order has now been committed.
@@ -241,84 +252,5 @@ class SubscriptionController extends AbstractController
     protected function createSdk(Config $config): SDK
     {
         return new SDK($config);
-    }
-
-    /**
-     * Create a recurring order using EC-CUBE's existing purchase flow.
-     */
-    private function createOrder(
-        Order $existingOrder,
-        $data,
-        $charge,
-        string $event,
-    ): Order {
-        $newOrder = OrderCopier::copy($existingOrder);
-
-        // Current payment Charge ID.
-        $newOrder->setUnivapayChargeId($charge->getId());
-
-        // Calculate subtotal from the current payment amount.
-        $newSubtotal = $existingOrder->getSubtotal()
-            - $existingOrder->getTotal()
-            + $data->data->amount
-            - $existingOrder->getDiscount();
-
-        $newOrder->setSubtotal($newSubtotal);
-
-        // Disable previous discount.
-        $newOrder->setDiscount(0);
-
-        // Update amounts for this recurring payment.
-        $newOrder->setTotal($data->data->amount);
-        $newOrder->setPaymentTotal($data->data->amount);
-        $newOrder->setPaymentDate(new \DateTime());
-
-        $purchaseContext = new PurchaseContext(
-            $newOrder,
-            $newOrder->getCustomer()
-        );
-
-        // Existing EC-CUBE purchase processing.
-        $this->addPointProcessor->validate(
-            $newOrder,
-            $purchaseContext
-        );
-
-        $newOrder->setPreOrderId(
-            $this->orderHelper->createPreOrderId()
-        );
-
-        $this->purchaseFlow->prepare(
-            $newOrder,
-            $purchaseContext
-        );
-
-        $this->purchaseFlow->commit(
-            $newOrder,
-            $purchaseContext
-        );
-
-        $this->entityManager->persist($newOrder);
-        $this->entityManager->flush();
-
-        // Regenerate the order number.
-        $this->orderNoProcessor->process(
-            $newOrder,
-            $purchaseContext
-        );
-
-        $this->entityManager->flush();
-
-        // Set final status based on payment event.
-        $status = $this->orderStatusRepository->find(
-            $event === 'subscription_payment'
-                ? OrderStatus::PAID
-                : OrderStatus::CANCEL
-        );
-
-        $newOrder->setOrderStatus($status);
-        $this->entityManager->flush();
-
-        return $newOrder;
     }
 }

@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitbdb475dd6715209f9eda0f23de6f6b9b
+class ComposerStaticInit81289221e4ed57580b0dd8b1ed7b6fef
 {
     public static $prefixLengthsPsr4 = array (
         'a' =>
@@ -15,10 +15,6 @@ class ComposerStaticInitbdb475dd6715209f9eda0f23de6f6b9b
         array (
             'UnivaPay\\' => 9,
             'Unirest\\' => 8,
-        ),
-        'P' =>
-        array (
-            'Psr\\Log\\' => 8,
         ),
         'C' =>
         array (
@@ -39,10 +35,6 @@ class ComposerStaticInitbdb475dd6715209f9eda0f23de6f6b9b
         'Unirest\\' =>
         array (
             0 => __DIR__ . '/..' . '/apimatic/unirest-php/src',
-        ),
-        'Psr\\Log\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/psr/log/Psr/Log',
         ),
         'Core\\' =>
         array (
@@ -71,10 +63,10 @@ class ComposerStaticInitbdb475dd6715209f9eda0f23de6f6b9b
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitbdb475dd6715209f9eda0f23de6f6b9b::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitbdb475dd6715209f9eda0f23de6f6b9b::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInitbdb475dd6715209f9eda0f23de6f6b9b::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInitbdb475dd6715209f9eda0f23de6f6b9b::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit81289221e4ed57580b0dd8b1ed7b6fef::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit81289221e4ed57580b0dd8b1ed7b6fef::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit81289221e4ed57580b0dd8b1ed7b6fef::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInit81289221e4ed57580b0dd8b1ed7b6fef::$classMap;
 
         }, null, ClassLoader::class);
     }

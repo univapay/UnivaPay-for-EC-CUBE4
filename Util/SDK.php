@@ -45,12 +45,14 @@ class SDK
             ->loggingConfiguration(
                 LoggingConfigurationBuilder::init()->logger($this->logger)
                     ->level(\Psr\Log\LogLevel::INFO)
-                    ->requestConfiguration(RequestLoggingConfigurationBuilder::init()
-                        ->headers(true)
-                        ->body(true)
+                    ->requestConfiguration(
+                        RequestLoggingConfigurationBuilder::init()
+                            ->headers(true)
+                            ->body(true)
                     )
-                    ->responseConfiguration(ResponseLoggingConfigurationBuilder::init()
-                        ->body(true)
+                    ->responseConfiguration(
+                        ResponseLoggingConfigurationBuilder::init()
+                            ->body(true)
                     )
             )
             ->build();
