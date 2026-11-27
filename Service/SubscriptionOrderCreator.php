@@ -2,10 +2,12 @@
 
 namespace Plugin\UnivaPay\Service;
 
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use Eccube\Entity\Master\OrderStatus;
 use Eccube\Entity\Order;
 use Eccube\Repository\Master\OrderStatusRepository;
+use Eccube\Repository\OrderRepository;
 use Eccube\Service\OrderHelper;
 use Eccube\Service\PurchaseFlow\Processor\AddPointProcessor;
 use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
@@ -22,6 +24,7 @@ class SubscriptionOrderCreator
     private $orderHelper;
     private $orderNoProcessor;
     private $addPointProcessor;
+    private $orderRepository;
 
     public function __construct(
         EntityManagerInterface $entityManager,
@@ -30,6 +33,7 @@ class SubscriptionOrderCreator
         OrderHelper $orderHelper,
         OrderNoProcessor $orderNoProcessor,
         AddPointProcessor $addPointProcessor,
+        OrderRepository $orderRepository,
     ) {
         $this->entityManager = $entityManager;
         $this->orderStatusRepository = $orderStatusRepository;
@@ -37,6 +41,7 @@ class SubscriptionOrderCreator
         $this->orderHelper = $orderHelper;
         $this->orderNoProcessor = $orderNoProcessor;
         $this->addPointProcessor = $addPointProcessor;
+        $this->orderRepository = $orderRepository;
     }
 
     public function create(
@@ -57,21 +62,23 @@ class SubscriptionOrderCreator
             throw new \InvalidArgumentException('Invalid subscription charge');
         }
 
-        // Copy the subscription parent order.
-        $newOrder = OrderCopier::copy($parent);
+        // Points and discounts used at checkout apply to the first charge only.
+        $isFirstCharge = $this->isFirstCharge($parent);
+        $newOrder = OrderCopier::copy($parent, $isFirstCharge);
 
         // Associate the recurring charge with the new order.
         $newOrder->setUnivapayChargeId($charge->getId());
 
-        // Retain the plugin's existing accounting calculation.
-        $newOrder->setSubtotal(
-            $parent->getSubtotal()
-            - $parent->getTotal()
-            + $amount
-            - $parent->getDiscount()
-        );
+        if (!$isFirstCharge) {
+            // Retain the plugin's existing accounting calculation.
+            $newOrder->setSubtotal(
+                $parent->getSubtotal()
+                - $parent->getTotal()
+                + $amount
+                - $parent->getDiscount()
+            );
+        }
 
-        $newOrder->setDiscount(0);
         $newOrder->setTotal($amount);
         $newOrder->setPaymentTotal($amount);
         $newOrder->setPaymentDate(new \DateTime());
@@ -131,5 +138,15 @@ class SubscriptionOrderCreator
         $this->entityManager->flush();
 
         return $newOrder;
+    }
+
+    private function isFirstCharge(Order $parent): bool
+    {
+        $criteria = Criteria::create()
+            ->where(Criteria::expr()->eq('univa_pay_parent_subscription_id', $parent->getUnivapayParentSubscriptionId()))
+            ->andWhere(Criteria::expr()->neq('univa_pay_charge_id', null))
+            ->andWhere(Criteria::expr()->neq('OrderStatus', $this->entityManager->getReference(OrderStatus::class, OrderStatus::CANCEL)));
+
+        return $this->orderRepository->matching($criteria)->isEmpty();
     }
 }

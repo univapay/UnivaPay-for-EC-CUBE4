@@ -71,4 +71,22 @@ class SubscriptionControllerTest extends EccubeTestCase
             $this->assertEquals(0, $item->getProductClass()->getProductStock()->getStock());
         }
     }
+
+    public function testOnlyFirstChargeCarriesUsedPoints()
+    {
+        $Parent = $this->createParentOrderWithoutStock();
+        $Parent->setUsePoint(100);
+        $Customer = $Parent->getCustomer();
+        $Customer->setPoint(500);
+        $this->entityManager->flush();
+
+        $First = $this->renew($Parent, true);
+        $this->assertEquals(100, $First->getUsePoint());
+        $this->assertEquals(400, $Customer->getPoint());
+
+        $Second = $this->renew($Parent, true);
+        $this->assertEquals(0, $Second->getUsePoint());
+        $this->assertEquals(0, $Second->getDiscount());
+        $this->assertEquals(400, $Customer->getPoint());
+    }
 }

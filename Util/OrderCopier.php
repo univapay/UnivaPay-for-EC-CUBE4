@@ -7,10 +7,10 @@ use Eccube\Entity\Order;
 class OrderCopier
 {
     /**
-     * Copies an order to build a subscription parent or child order. Discount and point items are not copied.
-     * The caller sets order number, charge id, status and payment date.
+     * Copies an order to build a subscription parent or child order. Discount and point items are copied only
+     * with $keepDiscounts, for the first charge. The caller sets order number, charge id, status and payment date.
      */
-    public static function copy(Order $source): Order
+    public static function copy(Order $source, bool $keepDiscounts = false): Order
     {
         // Built from scratch because cloning an order keeps its id.
         $order = new Order();
@@ -28,7 +28,8 @@ class OrderCopier
         $order->setAddr02($source->getAddr02());
         $order->setBirth($source->getBirth());
         $order->setSubtotal($source->getSubtotal());
-        $order->setDiscount($source->getDiscount());
+        $order->setDiscount($keepDiscounts ? $source->getDiscount() : 0);
+        $order->setUsePoint($keepDiscounts ? $source->getUsePoint() : 0);
         $order->setDeliveryFeeTotal($source->getDeliveryFeeTotal());
         $order->setCharge($source->getCharge());
         $order->setTax($source->getTax());
@@ -51,8 +52,7 @@ class OrderCopier
 
         foreach ($source->getOrderItems() as $value) {
             $newOrderItem = clone $value;
-            // Discounts are not carried over.
-            if ($newOrderItem->isDiscount() || $newOrderItem->isPoint()) {
+            if (!$keepDiscounts && ($newOrderItem->isDiscount() || $newOrderItem->isPoint())) {
                 continue;
             }
             $newOrderItem->setOrder($order);
