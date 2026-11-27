@@ -15,16 +15,6 @@
             document.getElementById("{{ form.webhook_auth.vars.id }}").value =
                 crypto.randomUUID();
         }
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        const error = urlParams.get("error");
-        if (error === "0") {
-            alert("インストールに成功しました。");
-        } else if (error === "1") {
-            alert(
-                "インストールができませんでした。サーバ内で下記コマンドを実行してください。\nbin/console eccube:composer:require univapay/php-sdk:^6.7",
-            );
-        }
     </script>
     <form role="form" method="post">
 
