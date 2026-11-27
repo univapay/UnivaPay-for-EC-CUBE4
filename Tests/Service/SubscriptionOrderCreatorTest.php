@@ -77,14 +77,16 @@ class SubscriptionOrderCreatorTest extends TestCase
             ->method('createPreOrderId')
             ->willReturn('preOrderId');
 
-        $this->flow->expects($this->once())
+        $runsPurchaseFlow = $event === 'subscription_payment';
+
+        $this->flow->expects($runsPurchaseFlow ? $this->once() : $this->never())
             ->method('prepare')
             ->with(
                 $this->isInstanceOf(Order::class),
                 $this->isInstanceOf(PurchaseContext::class)
             );
 
-        $this->flow->expects($this->once())
+        $this->flow->expects($runsPurchaseFlow ? $this->once() : $this->never())
             ->method('commit')
             ->with(
                 $this->isInstanceOf(Order::class),
@@ -120,7 +122,6 @@ class SubscriptionOrderCreatorTest extends TestCase
             $event
         );
 
-        // Verify the newly created order.
         $this->assertNotSame($parent, $child);
         $this->assertSame($persistedOrder, $child);
 
@@ -151,7 +152,13 @@ class SubscriptionOrderCreatorTest extends TestCase
             $child->getPaymentDate()
         );
 
-        // Verify that the original parent order is unchanged.
+        if (!$runsPurchaseFlow) {
+            $this->assertInstanceOf(
+                \DateTimeInterface::class,
+                $child->getOrderDate()
+            );
+        }
+
         $this->assertNull($parent->getUnivapayChargeId());
         $this->assertEquals(1000, $parent->getTotal());
         $this->assertEquals(1100, $parent->getSubtotal());

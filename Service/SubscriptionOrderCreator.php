@@ -91,15 +91,19 @@ class SubscriptionOrderCreator
             $this->orderHelper->createPreOrderId()
         );
 
-        $this->purchaseFlow->prepare(
-            $newOrder,
-            $context
-        );
+        if ($event === 'subscription_payment') {
+            $this->purchaseFlow->prepare(
+                $newOrder,
+                $context
+            );
 
-        $this->purchaseFlow->commit(
-            $newOrder,
-            $context
-        );
+            $this->purchaseFlow->commit(
+                $newOrder,
+                $context
+            );
+        } else {
+            $newOrder->setOrderDate(new \DateTime());
+        }
 
         // Save the new order.
         $this->entityManager->persist($newOrder);

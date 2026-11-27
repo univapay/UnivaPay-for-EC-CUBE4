@@ -2,6 +2,21 @@ services:
     Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus:
         class: Plugin\UnivaPay\Entity\Master\UnivaPayOrderStatus
 
+    eccube.purchase.flow.univapay.subscription_order:
+        class: Eccube\Service\PurchaseFlow\PurchaseFlow
+        calls:
+            - [ setFlowType, [ 'shopping' ] ]
+            - [ addPurchaseProcessor, [ '@eccube.purchase.flow.purchase.processor.pre.order.id.validator' ] ]
+            - [ addPurchaseProcessor, [ '@eccube.purchase.flow.purchase.processor.point.processor' ] ]
+            - [ addPurchaseProcessor, [ '@Plugin\UnivaPay\Service\PurchaseFlow\Processor\SubscriptionOrderStockReduceProcessor' ] ]
+            - [ addPurchaseProcessor, [ '@eccube.purchase.flow.purchase.processor.customer.purchase.info.processor' ] ]
+            - [ addPurchaseProcessor, [ '@eccube.purchase.flow.purchase.processor.order.update.processor' ] ]
+
+    Plugin\UnivaPay\Service\SubscriptionOrderCreator:
+        autowire: true
+        arguments:
+            $shoppingPurchaseFlow: '@eccube.purchase.flow.univapay.subscription_order'
+
 monolog:
     channels: ['univapay']
     handlers:

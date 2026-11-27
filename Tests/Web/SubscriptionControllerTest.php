@@ -2,11 +2,13 @@
 
 namespace Plugin\UnivaPay\Tests\Web;
 
+require_once __DIR__.'/../../Resource/autoload.php';
+
 use Eccube\Entity\Master\OrderStatus;
 use Eccube\Entity\Order;
-use Eccube\Repository\BaseInfoRepository;
 use Eccube\Tests\EccubeTestCase;
-use Plugin\UnivaPay\Controller\Api\SubscriptionController;
+use Plugin\UnivaPay\Service\SubscriptionOrderCreator;
+use UnivaPay\Models\Charge;
 
 class SubscriptionControllerTest extends EccubeTestCase
 {
@@ -27,15 +29,14 @@ class SubscriptionControllerTest extends EccubeTestCase
 
     private function renew(Order $Parent, bool $paid): Order
     {
-        // Order mail template reads BaseInfo, a Twig global normally set by the request listener.
-        self::$container->get('twig')->addGlobal('BaseInfo', self::$container->get(BaseInfoRepository::class)->get());
-        $controller = self::$container->get(SubscriptionController::class);
-        $method = new \ReflectionMethod($controller, 'createOrder');
-        $method->setAccessible(true);
-        $data = (object) ['data' => (object) ['amount' => $Parent->getPaymentTotal()]];
-        $charge = (object) ['id' => $this->getFaker()->uuid()];
+        $creator = static::getContainer()->get(SubscriptionOrderCreator::class);
 
-        return $method->invoke($controller, $Parent, $data, $charge, $paid);
+        $charge = new Charge();
+        $charge->setId($this->getFaker()->uuid());
+
+        $event = $paid ? 'subscription_payment' : 'subscription_failure';
+
+        return $creator->create($Parent, $charge, (int) $Parent->getPaymentTotal(), $event);
     }
 
     public function testPaymentWithoutStockCreatesPaidOrderAndNegativeStock()
