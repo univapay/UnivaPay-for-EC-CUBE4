@@ -3,7 +3,6 @@
 namespace Plugin\UnivaPay\Controller\Admin;
 
 use Eccube\Controller\AbstractController;
-use Eccube\Service\Composer\ComposerServiceInterface;
 use Plugin\UnivaPay\Form\Type\Admin\ConfigType;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
@@ -18,19 +17,11 @@ class ConfigController extends AbstractController
     protected $configRepository;
 
     /**
-     * @var ComposerServiceInterface
-     */
-    protected $composerService;
-
-    /**
      * ConfigController constructor.
      */
-    public function __construct(
-        ConfigRepository $configRepository,
-        ComposerServiceInterface $composerService,
-    ) {
+    public function __construct(ConfigRepository $configRepository)
+    {
         $this->configRepository = $configRepository;
-        $this->composerService = $composerService;
     }
 
     /**

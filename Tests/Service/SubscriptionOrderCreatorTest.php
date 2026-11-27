@@ -2,10 +2,12 @@
 
 namespace Plugin\UnivaPay\Tests\Service;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Eccube\Entity\Master\OrderStatus;
 use Eccube\Entity\Order;
 use Eccube\Repository\Master\OrderStatusRepository;
+use Eccube\Repository\OrderRepository;
 use Eccube\Service\OrderHelper;
 use Eccube\Service\PurchaseFlow\Processor\AddPointProcessor;
 use Eccube\Service\PurchaseFlow\Processor\OrderNoProcessor;
@@ -23,6 +25,7 @@ class SubscriptionOrderCreatorTest extends TestCase
     private $helper;
     private $orderNo;
     private $points;
+    private $orders;
 
     protected function setUp(): void
     {
@@ -34,6 +37,8 @@ class SubscriptionOrderCreatorTest extends TestCase
         $this->helper = $this->createMock(OrderHelper::class);
         $this->orderNo = $this->createMock(OrderNoProcessor::class);
         $this->points = $this->createMock(AddPointProcessor::class);
+        $this->orders = $this->createMock(OrderRepository::class);
+        $this->orders->method('matching')->willReturn(new ArrayCollection([new Order()]));
     }
 
     public static function paymentEvents(): array
@@ -77,14 +82,16 @@ class SubscriptionOrderCreatorTest extends TestCase
             ->method('createPreOrderId')
             ->willReturn('preOrderId');
 
-        $this->flow->expects($this->once())
+        $runsPurchaseFlow = $event === 'subscription_payment';
+
+        $this->flow->expects($runsPurchaseFlow ? $this->once() : $this->never())
             ->method('prepare')
             ->with(
                 $this->isInstanceOf(Order::class),
                 $this->isInstanceOf(PurchaseContext::class)
             );
 
-        $this->flow->expects($this->once())
+        $this->flow->expects($runsPurchaseFlow ? $this->once() : $this->never())
             ->method('commit')
             ->with(
                 $this->isInstanceOf(Order::class),
@@ -120,7 +127,6 @@ class SubscriptionOrderCreatorTest extends TestCase
             $event
         );
 
-        // Verify the newly created order.
         $this->assertNotSame($parent, $child);
         $this->assertSame($persistedOrder, $child);
 
@@ -151,11 +157,57 @@ class SubscriptionOrderCreatorTest extends TestCase
             $child->getPaymentDate()
         );
 
-        // Verify that the original parent order is unchanged.
+        if (!$runsPurchaseFlow) {
+            $this->assertInstanceOf(
+                \DateTimeInterface::class,
+                $child->getOrderDate()
+            );
+        }
+
         $this->assertNull($parent->getUnivapayChargeId());
         $this->assertEquals(1000, $parent->getTotal());
         $this->assertEquals(1100, $parent->getSubtotal());
         $this->assertEquals(100, $parent->getDiscount());
+    }
+
+    public function testFirstChargeKeepsParentDiscountAndPoints(): void
+    {
+        $this->orders = $this->createMock(OrderRepository::class);
+        $this->orders->method('matching')->willReturn(new ArrayCollection());
+        $this->statuses->method('find')->willReturn($this->createMock(OrderStatus::class));
+
+        $parent = $this->parentOrder();
+        $parent->setUsePoint(100);
+
+        $child = $this->creator()->create(
+            $parent,
+            $this->charge('firstChargeId'),
+            1000,
+            'subscription_payment'
+        );
+
+        $this->assertEquals(1100, $child->getSubtotal());
+        $this->assertEquals(100, $child->getDiscount());
+        $this->assertEquals(100, $child->getUsePoint());
+        $this->assertEquals(1000, $child->getTotal());
+    }
+
+    public function testRecurringChargeDropsDiscountAndPoints(): void
+    {
+        $this->statuses->method('find')->willReturn($this->createMock(OrderStatus::class));
+
+        $parent = $this->parentOrder();
+        $parent->setUsePoint(100);
+
+        $child = $this->creator()->create(
+            $parent,
+            $this->charge('secondChargeId'),
+            1200,
+            'subscription_payment'
+        );
+
+        $this->assertEquals(0, $child->getDiscount());
+        $this->assertEquals(0, $child->getUsePoint());
     }
 
     public function testRejectsUnsupportedEventWithoutSideEffects(): void
@@ -329,7 +381,8 @@ class SubscriptionOrderCreatorTest extends TestCase
             $this->flow,
             $this->helper,
             $this->orderNo,
-            $this->points
+            $this->points,
+            $this->orders
         );
     }
 }

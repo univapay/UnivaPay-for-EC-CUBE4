@@ -12,9 +12,9 @@ use Eccube\Entity\Master\OrderStatus;
  */
 class UnivaPayOrderStatus extends OrderStatus
 {
-    public const UNIVAPAY_SUBSCRIPTION_ACTIVE = 100;
-    public const UNIVAPAY_SUBSCRIPTION_CANCEL = 101;
-    public const UNIVAPAY_SUBSCRIPTION_SUSPEND = 102;
+    public const UNIVAPAY_SUBSCRIPTION_ACTIVE = 8001;
+    public const UNIVAPAY_SUBSCRIPTION_CANCEL = 8002;
+    public const UNIVAPAY_SUBSCRIPTION_SUSPEND = 8003;
 
     public const SUBSCRIPTION_STATUSES = [
         self::UNIVAPAY_SUBSCRIPTION_ACTIVE,

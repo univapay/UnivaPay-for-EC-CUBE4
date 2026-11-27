@@ -7,7 +7,7 @@ use Eccube\Entity\Order;
 use Eccube\Repository\OrderRepository;
 use Eccube\Service\MailService;
 use Eccube\Tests\EccubeTestCase;
-use Plugin\UnivaPay\Controller\Api\SubscriptionController;
+use Plugin\UnivaPay\Controller\Api\WebhookController;
 use Plugin\UnivaPay\Entity\Config;
 use Plugin\UnivaPay\Repository\ConfigRepository;
 use Plugin\UnivaPay\Service\SubscriptionOrderCreator;
@@ -102,7 +102,7 @@ class SubscriptionWebhookIdempotencyTest extends EccubeTestCase
         MailService $mail,
         ?SubscriptionOrderCreator $creator = null,
         ?EntityManagerInterface $em = null,
-    ): SubscriptionController {
+    ): WebhookController {
         $config = new Config();
         $config->setWebhookAuth(null);
 
@@ -114,7 +114,7 @@ class SubscriptionWebhookIdempotencyTest extends EccubeTestCase
             ->willReturn($config);
 
         $controller = $this->getMockBuilder(
-            SubscriptionController::class
+            WebhookController::class
         )
             ->setConstructorArgs([
                 $configs,
