@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-class SubscriptionController extends AbstractController
+class WebhookController extends AbstractController
 {
     private $Config;
     private $Order;
